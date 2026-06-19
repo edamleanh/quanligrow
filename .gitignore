@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+firebase_data.json
+DanhSachTruatXuat.zip
+DanhSach_*.xlsx
+class_status.json
+.env
