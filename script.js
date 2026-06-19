@@ -12,7 +12,7 @@ let classStatusMap = {};
 
 async function fetchClassStatus() {
     try {
-        const res = await fetch('http://localhost:3005/api/class-status');
+        const res = await fetch('/api/class-status');
         if (res.ok) {
             classStatusMap = await res.json();
         }
@@ -24,7 +24,7 @@ async function fetchClassStatus() {
 async function updateClassStatus(className, isActive) {
     classStatusMap[className] = isActive;
     try {
-        await fetch('http://localhost:3005/api/class-status', {
+        await fetch('/api/class-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(classStatusMap)
@@ -101,7 +101,10 @@ function processDataAndRender(data, loadingEl, tableContainer) {
             (typeof docData['HỌ'] === 'string' && docData['HỌ'].toUpperCase().includes('TỔNG CỘNG')) ||
             (typeof docData['TÊN'] === 'string' && docData['TÊN'].toUpperCase().includes('TỔNG CỘNG'));
             
-        if (!isTongCong) {
+        // Bỏ qua dòng cấu hình hệ thống
+        const isSystemConfig = (docData['STT'] === 99999 || docData['STT'] === '99999');
+
+        if (!isTongCong && !isSystemConfig) {
             allStudents.push(docData);
         }
     });
@@ -460,8 +463,8 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
     btn.disabled = true;
 
     try {
-        // We use localhost:3005 where our backend will be running
-        const response = await fetch('http://localhost:3005/api/export', {
+        // We use Vercel Serverless Function
+        const response = await fetch('/api/export', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
