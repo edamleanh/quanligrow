@@ -9,6 +9,8 @@ let allClassesList = [];
 let currentSubjectFilter = 'ALL';
 let currentSpecificClassFilter = null;
 let classStatusMap = {};
+let selectedStudentIds = [];
+let currentDetailedClass = null;
 
 async function fetchClassStatus() {
     try {
@@ -280,6 +282,7 @@ function renderClassGrid() {
 
 function showClassDetail(cls) {
     currentSpecificClassFilter = cls.id;
+    currentDetailedClass = cls; // Lưu lại đối tượng class hiện tại cho chức năng chuyển lớp
     document.getElementById('classManagementContainer').style.display = 'none';
     document.getElementById('classDetailView').style.display = 'block';
     
@@ -317,6 +320,11 @@ function showClassDetail(cls) {
     const tbody = document.getElementById('classDetailTableBody');
     tbody.innerHTML = '';
     
+    // Reset selections
+    selectedStudentIds = [];
+    document.getElementById('selectAllStudents').checked = false;
+    updateBulkActionsUI();
+    
     sortedStudents.forEach(student => {
         const tr = document.createElement('tr');
         const fullName = `${student['HỌ'] || ''} ${student['TÊN'] || ''}`.trim();
@@ -331,6 +339,9 @@ function showClassDetail(cls) {
         if (student['Lý']) subjects.push(`Lý ${lop}${student['Lý']}`.trim());
         
         tr.innerHTML = `
+            <td style="text-align: center;" class="checkbox-cell">
+                <input type="checkbox" class="student-checkbox" data-id="${student.id}">
+            </td>
             <td>${student['STT'] || ''}</td>
             <td style="font-weight: 500;">${fullName}</td>
             <td>${lop}</td>
@@ -338,10 +349,152 @@ function showClassDetail(cls) {
             <td>${subjects.map(s => `<span class="badge">${s}</span>`).join(' ')}</td>
         `;
         
+        // Prevent row click when clicking on the checkbox cell
+        tr.querySelector('.checkbox-cell').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.target.tagName !== 'INPUT') {
+                const checkbox = tr.querySelector('.student-checkbox');
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        tr.querySelector('.student-checkbox').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                if (!selectedStudentIds.includes(student.id)) selectedStudentIds.push(student.id);
+            } else {
+                selectedStudentIds = selectedStudentIds.filter(id => id !== student.id);
+                document.getElementById('selectAllStudents').checked = false;
+            }
+            updateBulkActionsUI();
+        });
+        
         tr.addEventListener('click', () => openModal(student));
         tbody.appendChild(tr);
     });
 }
+
+function updateBulkActionsUI() {
+    const bar = document.getElementById('bulkActionsBar');
+    const countSpan = document.getElementById('selectedCount');
+    
+    if (selectedStudentIds.length > 0) {
+        bar.style.display = 'flex';
+        countSpan.textContent = selectedStudentIds.length;
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+// Select All functionality
+document.getElementById('selectAllStudents').addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    
+    selectedStudentIds = [];
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+        if (isChecked) {
+            selectedStudentIds.push(cb.dataset.id);
+        }
+    });
+    updateBulkActionsUI();
+});
+
+// Bulk Delete Logic (Remove from class)
+document.getElementById('btnBulkDelete').addEventListener('click', async () => {
+    if (selectedStudentIds.length === 0 || !currentDetailedClass) return;
+    
+    if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedStudentIds.length} học sinh này khỏi lớp ${currentDetailedClass.name}? (Học sinh vẫn tồn tại trong hệ thống)`)) {
+        return;
+    }
+    
+    document.getElementById('btnBulkDelete').textContent = 'Đang xóa...';
+    document.getElementById('btnBulkDelete').disabled = true;
+    
+    try {
+        const subject = currentDetailedClass.subject;
+        const payload = {
+            [subject]: ''
+        };
+        
+        const { error } = await supabaseClient
+            .from('ds_tong')
+            .update(payload)
+            .in('id', selectedStudentIds);
+            
+        if (error) throw error;
+        
+        alert(`Đã xóa thành công ${selectedStudentIds.length} học sinh khỏi lớp ${currentDetailedClass.name}.`);
+        selectedStudentIds = [];
+        loadData(); // Tải lại toàn bộ dữ liệu
+    } catch (e) {
+        console.error("Lỗi xóa học sinh khỏi lớp:", e);
+        alert("Lỗi khi xóa: " + e.message);
+    } finally {
+        document.getElementById('btnBulkDelete').textContent = 'Xóa Khỏi Lớp';
+        document.getElementById('btnBulkDelete').disabled = false;
+    }
+});
+
+// Bulk Move Logic
+const bulkMoveModal = document.getElementById('bulkMoveModal');
+const closeBulkMoveModalBtn = document.getElementById('closeBulkMoveModal');
+const cancelBulkMoveModalBtn = document.getElementById('cancelBulkMoveModal');
+
+function closeBulkMoveModal() {
+    bulkMoveModal.style.display = 'none';
+}
+
+closeBulkMoveModalBtn.addEventListener('click', closeBulkMoveModal);
+cancelBulkMoveModalBtn.addEventListener('click', closeBulkMoveModal);
+
+document.getElementById('btnBulkMove').addEventListener('click', () => {
+    if (selectedStudentIds.length === 0 || !currentDetailedClass) return;
+    
+    document.getElementById('bulkMoveSubjectInfo').textContent = `${currentDetailedClass.subject}`;
+    document.getElementById('modalNewSubjectClass').value = '';
+    
+    bulkMoveModal.style.display = 'block';
+});
+
+document.getElementById('btnConfirmBulkMove').addEventListener('click', async () => {
+    if (selectedStudentIds.length === 0 || !currentDetailedClass) return;
+    
+    const newClassValue = document.getElementById('modalNewSubjectClass').value;
+    // Empty string is allowed (removes them from class)
+    
+    const btn = document.getElementById('btnConfirmBulkMove');
+    btn.textContent = 'Đang xử lý...';
+    btn.disabled = true;
+    
+    try {
+        // Prepare update payload for specific subject
+        // e.g. if subject is 'TOÁN', we set {'TOÁN': newClassValue.trim()}
+        const subject = currentDetailedClass.subject;
+        const payload = {
+            [subject]: newClassValue.trim()
+        };
+        
+        const { error } = await supabaseClient
+            .from('ds_tong')
+            .update(payload)
+            .in('id', selectedStudentIds);
+            
+        if (error) throw error;
+        
+        alert(`Đã cập nhật lớp cho ${selectedStudentIds.length} học sinh thành công.`);
+        closeBulkMoveModal();
+        selectedStudentIds = [];
+        loadData(); // Tải lại toàn bộ dữ liệu
+    } catch (e) {
+        console.error("Lỗi chuyển lớp:", e);
+        alert("Lỗi khi chuyển lớp: " + e.message);
+    } finally {
+        btn.textContent = 'Chuyển Lớp';
+        btn.disabled = false;
+    }
+});
 
 document.getElementById('btnBackToClasses').addEventListener('click', () => {
     currentSpecificClassFilter = null;
@@ -421,12 +574,17 @@ function switchView(viewId) {
         }
     });
     
-    // The table container should be visible in student-view
-    const tableContainer = document.getElementById('tableContainer');
     if (viewId === 'student-view') {
-        tableContainer.style.display = 'block';
-    } else {
-        tableContainer.style.display = 'none';
+        document.getElementById('tableContainer').style.display = 'block';
+        document.getElementById('classManagementContainer').style.display = 'none';
+        document.getElementById('classDetailView').style.display = 'none';
+    } else if (viewId === 'class-view') {
+        document.getElementById('tableContainer').style.display = 'none';
+        // Check if detail view is already shown (user previously opened a class)
+        const detailView = document.getElementById('classDetailView');
+        if (detailView.style.display !== 'block') {
+            document.getElementById('classManagementContainer').style.display = 'block';
+        }
     }
 }
 
@@ -556,6 +714,9 @@ cancelModalBtn.addEventListener('click', closeModal);
 window.addEventListener('click', (e) => {
     if (e.target === modal) {
         closeModal();
+    }
+    if (e.target === bulkMoveModal) {
+        closeBulkMoveModal();
     }
 });
 
