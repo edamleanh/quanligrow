@@ -7,9 +7,10 @@ import re
 from copy import copy
 
 def get_vn_sort_key(text):
-    text = str(text).lower()
+    text = str(text).strip().lower()
+    text = text.replace('ð', 'đ') # Handle Unicode Eth which looks like Đ
     alphabet = "a á à ả ã ạ ă ắ ằ ẳ ẵ ặ â ấ ầ ẩ ẫ ậ b c d đ e é è ẻ ẽ ẹ ê ế ề ể ễ ệ f g h i í ì ỉ ĩ ị j k l m n o ó ò ỏ õ ọ ô ố ồ ổ ỗ ộ ơ ớ ờ ở ỡ ợ p q r s t u ú ù ủ ũ ụ ư ứ ừ ử ữ ự v w x y ý ỳ ỷ ỹ ỵ z"
-    order = {c: f"{i:03d}" for i, c in enumerate(alphabet.split())}
+    order = {c: f"{i+1:03d}" for i, c in enumerate(alphabet.split())}
     result = []
     for char in text:
         if char in order:
@@ -17,7 +18,7 @@ def get_vn_sort_key(text):
         elif char.isspace():
             result.append("000")
         else:
-            result.append(f"000{ord(char)}")
+            result.append(f"999{ord(char):05d}")
     return "-".join(result)
 
 def main():
