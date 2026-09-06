@@ -37,22 +37,69 @@ async function fetchClassStatus() {
             appState.classStatusMap = await res.json();
         }
     } catch (e) {
-        console.error("Lỗi lấy trạng thái lớp từ server:", e);
+        console.warn("Lỗi lấy trạng thái lớp từ Express API:", e);
+    }
+
+    // Fallback/sync từ Supabase STT = 99999 nếu map trống
+    if (!appState.classStatusMap || Object.keys(appState.classStatusMap).length === 0) {
+        try {
+            const { data } = await supabase
+                .from('ds_tong')
+                .select('Ghi chú')
+                .eq('STT', 99999)
+                .single();
+            if (data && data['Ghi chú']) {
+                appState.classStatusMap = JSON.parse(data['Ghi chú']);
+            }
+        } catch (e) {
+            console.error("Lỗi lấy config trạng thái lớp từ Supabase:", e);
+        }
     }
 }
 
 async function updateClassStatus(className, isActive) {
     appState.classStatusMap[className] = isActive;
+    const configStr = JSON.stringify(appState.classStatusMap);
+
+    // 1. Lưu vào Express API (Local server)
     try {
         await fetch('/api/class-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(appState.classStatusMap)
+            body: configStr
         });
-        renderClassGrid();
     } catch (e) {
-        console.error("Lỗi cập nhật trạng thái lớp:", e);
+        console.warn("Lỗi lưu Express API:", e);
     }
+
+    // 2. Đồng bộ lên Supabase (Dòng STT = 99999) để lưu trữ vĩnh viễn trên đám mây
+    try {
+        const { data: existing } = await supabase
+            .from('ds_tong')
+            .select('STT')
+            .eq('STT', 99999)
+            .single();
+
+        if (existing) {
+            await supabase
+                .from('ds_tong')
+                .update({ 'Ghi chú': configStr })
+                .eq('STT', 99999);
+        } else {
+            await supabase
+                .from('ds_tong')
+                .insert({ 
+                    STT: 99999, 
+                    'HỌ': 'SYSTEM', 
+                    'TÊN': 'CONFIG', 
+                    'Ghi chú': configStr 
+                });
+        }
+    } catch (e) {
+        console.error("Lỗi đồng bộ cấu hình lớp lên Supabase:", e);
+    }
+
+    renderClassGrid();
 }
 
 async function fetchAllStudentsFromSupabase() {
@@ -309,26 +356,42 @@ function showClassDetail(cls) {
     document.getElementById('classManagementContainer').classList.add('hidden');
     document.getElementById('classDetailView').classList.remove('hidden');
 
-    document.getElementById('classDetailTitle').textContent = `Lớp: ${cls.name}`;
     document.getElementById('classDetailCount').textContent = `Tổng số: ${cls.students.length} học sinh`;
 
-    // Toggle Class Status button handler
+    // Toggle Class Status button handler & header badge
     const toggleBtn = document.getElementById('btnToggleClassStatus');
-    let isActive = appState.classStatusMap[cls.name] !== false;
+    const classDetailTitle = document.getElementById('classDetailTitle');
 
-    function updateBtnUI() {
-        toggleBtn.textContent = isActive ? "Khóa Lớp" : "Mở Khóa Lớp";
+    function updateHeaderStatusUI() {
+        const isActive = appState.classStatusMap[cls.name] !== false;
+        classDetailTitle.innerHTML = `Lớp: ${cls.name} <span class="status-badge" style="font-size: 0.85rem; padding: 4px 10px; border-radius: 12px; font-weight: 600; color: white; background-color: ${isActive ? '#28a745' : '#dc3545'}; margin-left: 8px;">${isActive ? '● Đang hoạt động' : '🔒 Đã khóa'}</span>`;
+
+        toggleBtn.textContent = isActive ? "🔒 Khóa Lớp" : "🔓 Mở Khóa Lớp";
         toggleBtn.style.backgroundColor = isActive ? "#dc3545" : "#28a745";
     }
-    updateBtnUI();
+
+    updateHeaderStatusUI();
 
     const newToggleBtn = toggleBtn.cloneNode(true);
     toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
 
-    newToggleBtn.addEventListener('click', () => {
-        isActive = !isActive;
-        updateBtnUI();
-        updateClassStatus(cls.name, isActive);
+    newToggleBtn.addEventListener('click', async () => {
+        const currentIsActive = appState.classStatusMap[cls.name] !== false;
+        const targetState = !currentIsActive;
+
+        newToggleBtn.disabled = true;
+        newToggleBtn.textContent = "⏳ Đang lưu...";
+
+        try {
+            await updateClassStatus(cls.name, targetState);
+            updateHeaderStatusUI();
+            alert(targetState ? `✅ Đã mở khóa lớp "${cls.name}" thành công!` : `🔒 Đã khóa lớp "${cls.name}" thành công!`);
+        } catch (e) {
+            console.error("Lỗi cập nhật trạng thái lớp:", e);
+            alert("Có lỗi xảy ra khi cập nhật trạng thái lớp: " + e.message);
+        } finally {
+            newToggleBtn.disabled = false;
+        }
     });
 
     // Populate class detail table
