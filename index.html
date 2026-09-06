@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduManager - Quản lý Học sinh & Lớp học</title>
+    <title>EduManager V2 - Quản lý Trung tâm Dạy thêm</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -12,8 +12,16 @@
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="logo">
-                <h2>EduManager</h2>
-                <p>Hệ thống Quản lý Học sinh</p>
+                <h2>EduManager V2</h2>
+                <p>Quản lý Trung tâm Dạy thêm</p>
+            </div>
+            <div class="user-role-badge">
+                <span>Vai trò:</span>
+                <select id="roleSelector" class="role-select">
+                    <option value="ADMIN">👑 Admin (Chủ TT)</option>
+                    <option value="CASHIER" selected>💵 Thu ngân (Cashier)</option>
+                    <option value="TEACHER">👨‍🏫 Giáo viên (Teacher)</option>
+                </select>
             </div>
             <nav class="side-nav">
                 <a href="#" class="nav-item active" data-view="class-view">
@@ -21,6 +29,12 @@
                 </a>
                 <a href="#" class="nav-item" data-view="student-view">
                     <span class="icon">🎓</span> Quản lý Học sinh
+                </a>
+                <a href="#" class="nav-item" data-view="receipt-view" id="navReceipt">
+                    <span class="icon">🧾</span> Lập Biên Lai Thu Tiền
+                </a>
+                <a href="#" class="nav-item" data-view="debt-view" id="navDebt">
+                    <span class="icon">📊</span> Tra Cứu Công Nợ & Nhắc Phí
                 </a>
             </nav>
         </aside>
@@ -30,6 +44,7 @@
             <header class="top-header">
                 <h1 id="pageTitle">Quản lý Lớp học</h1>
                 <div class="header-actions">
+                    <button id="btnCreateReceiptHeader" class="btn-primary-action">+ 🧾 Lập Biên Lai Mới</button>
                     <button id="exportBtn" class="btn-export">Trích xuất File Excel</button>
                 </div>
             </header>
@@ -38,15 +53,14 @@
                 <!-- Global Loader -->
                 <div id="loading" class="loading">
                     <div class="spinner"></div>
-                    <span>Đang tải dữ liệu từ máy chủ Supabase...</span>
+                    <span>Đang tải dữ liệu hệ thống EduManager V2...</span>
                 </div>
 
                 <!-- VIEW 1: QUẢN LÝ LỚP HỌC -->
                 <div id="class-view" class="view-section active">
-                    <!-- Danh sách thẻ lớp học -->
                     <div id="classManagementContainer" class="class-management hidden">
                         <div class="class-header">
-                            <h2>Danh sách các lớp (Nhấp chọn lớp để xem danh sách chi tiết)</h2>
+                            <h2>Danh sách Lớp học theo Môn (Nhấp chọn lớp để xem danh sách chi tiết)</h2>
                             <div class="class-tabs" id="subjectTabs">
                                 <button class="tab-btn active" data-subject="ALL">Tất cả môn</button>
                                 <button class="tab-btn" data-subject="TOÁN">Toán</button>
@@ -56,12 +70,10 @@
                                 <button class="tab-btn" data-subject="Lý">Lý</button>
                             </div>
                         </div>
-                        <div class="class-grid" id="classGrid">
-                            <!-- Populated dynamically via JS -->
-                        </div>
+                        <div class="class-grid" id="classGrid"></div>
                     </div>
 
-                    <!-- Detail View cho 1 lớp được chọn -->
+                    <!-- Detail View 1 lớp -->
                     <div id="classDetailView" class="hidden">
                         <div class="class-detail-header">
                             <button id="btnBackToClasses" class="btn-back">&#8592; Quay lại danh sách lớp</button>
@@ -70,7 +82,6 @@
                             <button id="btnToggleClassStatus" class="btn-toggle-status"></button>
                         </div>
                         
-                        <!-- Thanh thao tác hàng loạt (Bulk Actions) -->
                         <div id="bulkActionsBar" class="bulk-actions-bar hidden">
                             <span class="bulk-count"><span id="selectedCount">0</span> học sinh đã chọn</span>
                             <div class="bulk-buttons">
@@ -85,25 +96,24 @@
                                     <tr>
                                         <th class="col-checkbox"><input type="checkbox" id="selectAllStudents"></th>
                                         <th class="col-stt">STT</th>
+                                        <th>Mã HS</th>
                                         <th>Họ và Tên</th>
-                                        <th class="col-grade">Lớp</th>
-                                        <th class="col-phone">Số ĐT</th>
+                                        <th class="col-grade">Khối</th>
+                                        <th class="col-phone">Số Điện Thoại</th>
                                         <th>Môn Học Enrolled</th>
                                     </tr>
                                 </thead>
-                                <tbody id="classDetailTableBody">
-                                    <!-- Populated dynamically via JS -->
-                                </tbody>
+                                <tbody id="classDetailTableBody"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <!-- VIEW 2: QUẢN LÝ HỌC SINH TOÀN HỆ THỐNG -->
+                <!-- VIEW 2: QUẢN LÝ HỌC SINH -->
                 <div id="student-view" class="view-section hidden">
                     <div class="controls">
                         <div class="search-box">
-                            <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm theo Họ tên hoặc Số điện thoại...">
+                            <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm theo Mã HS, Họ tên hoặc Số điện thoại...">
                         </div>
                         <div class="filter-box">
                             <select id="classFilter">
@@ -121,23 +131,130 @@
                             <thead>
                                 <tr>
                                     <th class="col-stt">STT</th>
+                                    <th>Mã HS</th>
                                     <th>Họ và Tên</th>
-                                    <th class="col-grade">Khối Lớp</th>
+                                    <th class="col-grade">Khối</th>
                                     <th class="col-phone">Số Điện Thoại</th>
                                     <th>Phân Ban & Môn Học</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableBody">
-                                <!-- Populated dynamically via JS -->
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: LẬP BIÊN LAI THU TIỀN -->
+                <div id="receipt-view" class="view-section hidden">
+                    <div class="receipt-workspace">
+                        <div class="card-panel">
+                            <h2>🧾 Lập Biên Lai Thu Học Phí</h2>
+                            <form id="receiptForm">
+                                <div class="form-row">
+                                    <div class="form-group flex-1">
+                                        <label>Học Sinh Thanh Toán: <span class="required-mark">*</span></label>
+                                        <select id="receiptStudentSelect" required>
+                                            <option value="">-- Chọn học sinh --</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group flex-1">
+                                        <label>Phân Loại Biên Lai: <span class="required-mark">*</span></label>
+                                        <select id="receiptTypeSelect" required>
+                                            <option value="IN_MAY" selected>🖨️ In máy trực tiếp (IN_MAY)</option>
+                                            <option value="NHAP_TAY">✍️ Nhập tay cuống sổ (NHAP_TAY)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group flex-1 hidden" id="manualCodeGroup">
+                                        <label>Số Biên Lai Tay / Mã Tham Chiếu: <span class="required-mark">*</span></label>
+                                        <input type="text" id="manualReceiptCode" placeholder="Ví dụ: BL-2026-089">
+                                    </div>
+                                </div>
+
+                                <div class="line-items-header">
+                                    <h3>Chi Tiết Các Mục Thanh Toán</h3>
+                                    <button type="button" id="btnAddReceiptLine" class="btn-secondary-action">+ Thêm Dòng Thanh Toán</button>
+                                </div>
+
+                                <table class="items-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Lớp Học</th>
+                                            <th>Đợt Học</th>
+                                            <th>Số Tiền Thu (VNĐ)</th>
+                                            <th>Ghi Chú Dòng</th>
+                                            <th style="width: 50px;">Xóa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="receiptItemsTableBody">
+                                        <!-- Line items populated dynamically -->
+                                    </tbody>
+                                </table>
+
+                                <div class="receipt-summary-bar">
+                                    <div class="total-label">Tổng Tiền Biên Lai:</div>
+                                    <div class="total-amount" id="receiptTotalDisplay">0 VNĐ</div>
+                                    <button type="submit" class="btn-save-receipt">💾 Hoàn Tất & In Biên Lai</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 4: TRA CỨU CÔNG NỢ & TÌNH TRẠNG ĐÓNG PHÍ -->
+                <div id="debt-view" class="view-section hidden">
+                    <div class="debt-controls card-panel">
+                        <h2>📊 Tra Cứu Công Nợ & Tình Trạng Đóng Phí Theo Đợt</h2>
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label>Chọn Lớp Học:</label>
+                                <select id="debtClassSelect">
+                                    <option value="">-- Tất cả các lớp --</option>
+                                </select>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label>Chọn Đợt Học:</label>
+                                <select id="debtBatchSelect">
+                                    <option value="DOT_1">Đợt 1 (Tháng 9/2026)</option>
+                                    <option value="DOT_2">Đợt 2 (Tháng 10/2026)</option>
+                                </select>
+                            </div>
+                            <div class="form-group flex-1 align-self-end">
+                                <div class="status-filter-buttons">
+                                    <button class="filter-badge-btn active" data-status="ALL">Tất cả</button>
+                                    <button class="filter-badge-btn status-paid" data-status="PAID">🟢 Đã đóng đủ</button>
+                                    <button class="filter-badge-btn status-partial" data-status="PARTIAL">🟡 Đóng thiếu</button>
+                                    <button class="filter-badge-btn status-unpaid" data-status="UNPAID">🔴 Chưa đóng</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-stt">STT</th>
+                                    <th>Mã HS</th>
+                                    <th>Họ và Tên</th>
+                                    <th>Lớp Học</th>
+                                    <th>Đợt Học</th>
+                                    <th>Học Phí Đợt</th>
+                                    <th>Đã Thanh Toán</th>
+                                    <th>Trạng Thái Phí</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="debtTableBody">
+                                <!-- Populated dynamically -->
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </main>
     </div>
 
-    <!-- Modal 1: Chi Tiết & Chỉnh Sửa / Thêm Học Sinh -->
+    <!-- MODAL 1: CHI TIẾT / THÊM HỌC SINH -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeModal">&times;</span>
@@ -158,7 +275,7 @@
                 </div>
                 <div class="form-group">
                     <label for="modalSdt">Số ĐT:</label>
-                    <input type="text" id="modalSdt" placeholder="Nhập số điện thoại phụ huynh/học sinh">
+                    <input type="text" id="modalSdt" placeholder="Nhập số điện thoại chính gia đình">
                 </div>
                 <div class="form-group">
                     <label for="modalToan">Toán:</label>
@@ -188,20 +305,17 @@
         </div>
     </div>
 
-    <!-- Modal 2: Chuyển Lớp Hàng Loạt (Bulk Move) -->
-    <div id="bulkMoveModal" class="modal">
-        <div class="modal-content modal-sm">
-            <span class="close-btn" id="closeBulkMoveModal">&times;</span>
-            <h2>Chuyển Lớp Hàng Loạt</h2>
-            <p class="modal-subtitle">Đang thao tác trên môn: <strong id="bulkMoveSubjectInfo"></strong></p>
-            <div class="form-group flex-column">
-                <label for="modalNewSubjectClass">Nhập phân ban mới: <span class="required-mark">*</span></label>
-                <input type="text" id="modalNewSubjectClass" placeholder="Ví dụ: A, B, A1...">
-                <small class="form-hint">💡 Mẹo: Nhập khoảng trắng để xóa học sinh khỏi môn này.</small>
-            </div>
-            <div class="form-actions">
-                <button type="button" id="btnConfirmBulkMove" class="btn-save">Xác Nhận Chuyển</button>
-                <button type="button" class="btn-cancel" id="cancelBulkMoveModal">Hủy</button>
+    <!-- MODAL 2: POPUP CẢNH BÁO ĐÓNG HỌC PHÍ LẦN ĐẦU -->
+    <div id="firstTimeAlertModal" class="modal">
+        <div class="modal-content modal-warning">
+            <span class="close-btn" id="closeFirstTimeAlertModal">&times;</span>
+            <div class="warning-icon">⚠️</div>
+            <h2>CẢNH BÁO ĐÓNG PHÍ LẦN ĐẦU</h2>
+            <p class="warning-text" id="firstTimeAlertMessage">
+                Đây là lần đầu tiên học sinh đóng học phí cho lớp này. Vui lòng kiểm tra và sửa lại số tiền đợt đầu cho phù hợp (nếu học sinh vào học giữa chừng)!
+            </p>
+            <div class="form-actions center-actions">
+                <button type="button" id="btnConfirmFirstTimeAlert" class="btn-save btn-warning-confirm">Tôi Đã Hiểu & Đã Kiểm Tra</button>
             </div>
         </div>
     </div>
@@ -211,4 +325,3 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
