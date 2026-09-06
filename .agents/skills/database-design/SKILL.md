@@ -101,15 +101,57 @@ Quy trình chuyển đổi 7 bước chuẩn lý thuyết Elmasri & Navathe:
 - **Điều kiện**: Với mọi phụ thuộc hàm không hiển nhiên $X \to Y$, $X$ bắt buộc phải là một **Siêu khóa (Superkey)**.
 
 ---
+## 5. Suy Luận Tự Động Ràng Buộc & Logic Nghiệp Vụ (Constraints, Triggers & Views)
 
-## 5. Định Dạng Xuất Tài Liệu Chuẩn Mẫu (Standard Output Format)
+Khi nhận yêu cầu từ người dùng, Agent **KHÔNG CHỈ** dừng lại ở việc tạo bảng và khóa chính/khóa ngoại, mà **BẮT BUỘC PHẢI TỰ SUY LUẬN VÀ BỔ SUNG**:
 
-Khi viết tài liệu CSDL cho người dùng, luôn trình bày theo 4 phần chuẩn mực sau:
+### 5.1. Ràng Buộc Miền Giá Trị (Domain Integrity & CHECK Constraints)
+Tự động suy luận các quy tắc toàn vẹn từ ngữ cảnh thực tế:
+- **Độ dài & Định dạng SĐT**: `CHECK (sodt ~ '^[0-9]{10,11}$')`
+- **Khối lớp**: `CHECK (khoi_lop BETWEEN 1 AND 12)`
+- **Điểm số**: `CHECK (diem >= 0.0 AND diem <= 10.0)`
+- **Khoảng thời gian**: `CHECK (ngay_ket_thuc >= ngay_bat_dau)`
+- **Trạng thái (Enum Check)**: `CHECK (trang_thai IN ('ACTIVE', 'INACTIVE', 'SUSPENDED'))`
+- **Email hợp lệ**: `CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')`
 
-### Phần 1: Danh Sách Thực Thể & Thuộc Tính (Entities & Attributes)
-### Phần 2: Sơ Đồ ERD (Mermaid Code Block)
-### Phần 3: Relational Data Model (Ký hiệu Lý thuyết)
+### 5.2. Database Triggers & Stored Functions (PL/pgSQL)
+Bắt buộc bổ sung các Trigger tự động hóa:
+1. **Trigger Tự Động Cập Nhật `updated_at`**:
+   ```sql
+   CREATE OR REPLACE FUNCTION update_updated_at_column()
+   RETURNS TRIGGER AS $$
+   BEGIN
+       NEW.updated_at = CURRENT_TIMESTAMP;
+       RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql;
+   ```
+2. **Trigger Kiểm Tra / Tính Toán Nghiệp Vụ**:
+   - Tự động cập nhật sĩ số lớp học khi thêm/xóa học sinh.
+   - Tự động tính điểm trung bình môn hoặc tổng học phí.
+   - Trigger Audit Log ghi lại lịch sử thay đổi thông tin quan trọng.
+
+### 5.3. Views & Materialized Views (Khái Quát Hóa Báo Cáo)
+Thiết kế sẵn các `VIEW` phục vụ việc truy vấn và trích xuất dữ liệu nhanh:
+- `v_danh_sach_lop_hoc`: View kết hợp thông tin Học sinh, Lớp học và Giáo viên.
+- `v_thong_ke_si_so`: View thống kê tổng số lượng học sinh theo môn và khối lớp.
+
+### 5.4. Supabase Row-Level Security (RLS Policies)
+Quy định phân quyền dữ liệu mức dòng:
+- Bật RLS: `ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;`
+- Đặt Policy cho Admin, Giáo viên và Học sinh.
+
+---
+
+## 6. Định Dạng Xuất Tài Liệu Chuẩn Mẫu (Standard Output Format)
+
+Khi viết tài liệu CSDL cho người dùng, luôn trình bày đầy đủ 5 phần chuẩn mực sau:
+
+### Phần 1: Phân Tích Thực Thể & Thuộc Tính (Entities & Attributes)
+### Phần 2: Sơ Đồ ERD (Mermaid Diagram Code Block)
+### Phần 3: Relational Data Model (Mô hình quan hệ dạng ký hiệu lý thuyết)
 - Ký hiệu: `TenBang(<u>KhoaChinh</u>, ThuocTinh1, ThuocTinh2, KhoaNgoai -> TenBangKhac(KhoaChinh))`
+### Phần 4: Phân Tích Dạng Chuẩn (1NF -> 2NF -> 3NF / BCNF Proof)
+### Phần 5: Production-Ready SQL DDL Schema & Triggers (PostgreSQL / Supabase)
+- Có đầy đủ: `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL`, `UNIQUE`, `CHECK Constraints`, `INDEXES`, `TRIGGERS` và `VIEWS`.
 
-### Phần 4: SQL DDL Schema Sản Xuất (PostgreSQL / Supabase Ready)
-- Có đầy đủ: `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL`, `UNIQUE`, `CHECK`, `INDEX`, `ON DELETE CASCADE / SET NULL`.
