@@ -4,6 +4,7 @@ import json
 import zipfile
 import glob
 import re
+import os
 from copy import copy
 
 def get_vn_sort_key(text):
@@ -192,12 +193,24 @@ def main():
         with zipfile.ZipFile(zip_filename, 'w') as zipf:
             for subject in target_subjects:
                 file_to_zip = f"DanhSach_{subject.upper()}_TatCaLop.xlsx"
-                zipf.write(file_to_zip)
+                if os.path.exists(file_to_zip):
+                    zipf.write(file_to_zip)
         print(f"Successfully created {zip_filename}")
+        
+        # Clean up temporary subject xlsx files
+        import os
+        for subject in target_subjects:
+            file_to_remove = f"DanhSach_{subject.upper()}_TatCaLop.xlsx"
+            if os.path.exists(file_to_remove):
+                try:
+                    os.remove(file_to_remove)
+                except Exception:
+                    pass
     except Exception as e:
         print(f"ERROR: Failed to create zip file. {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
     main()
+
 

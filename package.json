@@ -1,13 +1,21 @@
 {
-  "name": "danhsach",
+  "name": "edumanager",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "EduManager - Hệ thống Quản lý Học sinh & Lớp học",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "export-excel": "python fill_template.py",
+    "check-data": "python tools/check_data.py"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "edumanager",
+    "student-management",
+    "supabase",
+    "excel-export"
+  ],
+  "author": "edamleanh",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

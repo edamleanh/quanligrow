@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh Sách Học Sinh</title>
+    <title>EduManager - Quản lý Học sinh & Lớp học</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-layout">
-        <!-- Sidebar -->
+        <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="logo">
                 <h2>EduManager</h2>
-                <p>Hệ thống Quản lý</p>
+                <p>Hệ thống Quản lý Học sinh</p>
             </div>
             <nav class="side-nav">
                 <a href="#" class="nav-item active" data-view="class-view">
@@ -25,7 +25,7 @@
             </nav>
         </aside>
 
-        <!-- Main Content -->
+        <!-- Main Workspace -->
         <main class="main-content">
             <header class="top-header">
                 <h1 id="pageTitle">Quản lý Lớp học</h1>
@@ -35,19 +35,20 @@
             </header>
 
             <div class="content-wrapper">
+                <!-- Global Loader -->
                 <div id="loading" class="loading">
                     <div class="spinner"></div>
-                    Đang tải dữ liệu từ máy chủ...
+                    <span>Đang tải dữ liệu từ máy chủ Supabase...</span>
                 </div>
 
-                <!-- VIEW: QUẢN LÝ LỚP HỌC -->
+                <!-- VIEW 1: QUẢN LÝ LỚP HỌC -->
                 <div id="class-view" class="view-section active">
-                    <!-- Danh sách thẻ lớp -->
-                    <div id="classManagementContainer" class="class-management" style="display: none;">
+                    <!-- Danh sách thẻ lớp học -->
+                    <div id="classManagementContainer" class="class-management hidden">
                         <div class="class-header">
-                            <h2>Danh sách các lớp (Click vào lớp để xem chi tiết)</h2>
+                            <h2>Danh sách các lớp (Nhấp chọn lớp để xem danh sách chi tiết)</h2>
                             <div class="class-tabs" id="subjectTabs">
-                                <button class="tab-btn active" data-subject="ALL">Tất cả</button>
+                                <button class="tab-btn active" data-subject="ALL">Tất cả môn</button>
                                 <button class="tab-btn" data-subject="TOÁN">Toán</button>
                                 <button class="tab-btn" data-subject="VĂN">Văn</button>
                                 <button class="tab-btn" data-subject="AV">Anh Văn</button>
@@ -56,76 +57,78 @@
                             </div>
                         </div>
                         <div class="class-grid" id="classGrid">
-                            <!-- Class cards will be populated via JS -->
+                            <!-- Populated dynamically via JS -->
                         </div>
                     </div>
 
-                    <!-- Chi tiết một lớp cụ thể -->
-                    <div id="classDetailView" style="display: none;">
-                        <div class="class-detail-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                            <button id="btnBackToClasses" class="tab-btn" style="padding: 0.5rem 1rem; border-color: var(--primary-color); color: var(--primary-color);">&#8592; Quay lại</button>
-                            <h2 id="classDetailTitle" style="margin: 0; color: var(--primary-color);">Chi tiết lớp</h2>
-                            <span id="classDetailCount" style="margin-left: auto; font-weight: bold; color: #666;"></span>
-                            <button id="btnToggleClassStatus" style="margin-left: 1rem; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white;"></button>
+                    <!-- Detail View cho 1 lớp được chọn -->
+                    <div id="classDetailView" class="hidden">
+                        <div class="class-detail-header">
+                            <button id="btnBackToClasses" class="btn-back">&#8592; Quay lại danh sách lớp</button>
+                            <h2 id="classDetailTitle">Chi tiết lớp</h2>
+                            <span id="classDetailCount" class="class-detail-count"></span>
+                            <button id="btnToggleClassStatus" class="btn-toggle-status"></button>
                         </div>
                         
-                        <div id="bulkActionsBar" style="display: none; padding: 12px; background: #f0f8ff; border-radius: 8px; margin-bottom: 15px; align-items: center; gap: 10px; border: 1px solid #cce5ff;">
-                            <span style="font-weight: bold;"><span id="selectedCount">0</span> học sinh đã chọn</span>
-                            <button id="btnBulkMove" style="padding: 6px 15px; border: none; background: var(--primary-color); color: white; border-radius: 4px; cursor: pointer; margin-left: auto; font-weight: 500;">Chuyển Lớp</button>
-                            <button id="btnBulkDelete" style="padding: 6px 15px; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer; font-weight: 500;">Xóa Khỏi Lớp</button>
+                        <!-- Thanh thao tác hàng loạt (Bulk Actions) -->
+                        <div id="bulkActionsBar" class="bulk-actions-bar hidden">
+                            <span class="bulk-count"><span id="selectedCount">0</span> học sinh đã chọn</span>
+                            <div class="bulk-buttons">
+                                <button id="btnBulkMove" class="btn-bulk btn-bulk-move">Chuyển Lớp</button>
+                                <button id="btnBulkDelete" class="btn-bulk btn-bulk-delete">Xóa Khỏi Lớp</button>
+                            </div>
                         </div>
                         
-                        <div class="table-container" style="display: block;">
+                        <div class="table-container">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllStudents"></th>
-                                        <th>STT</th>
+                                        <th class="col-checkbox"><input type="checkbox" id="selectAllStudents"></th>
+                                        <th class="col-stt">STT</th>
                                         <th>Họ và Tên</th>
-                                        <th>Lớp</th>
-                                        <th>Số ĐT</th>
-                                        <th>Môn Học</th>
+                                        <th class="col-grade">Lớp</th>
+                                        <th class="col-phone">Số ĐT</th>
+                                        <th>Môn Học Enrolled</th>
                                     </tr>
                                 </thead>
                                 <tbody id="classDetailTableBody">
-                                    <!-- Data populated via JS -->
+                                    <!-- Populated dynamically via JS -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <!-- VIEW: QUẢN LÝ HỌC SINH -->
-                <div id="student-view" class="view-section" style="display: none;">
-                    <div class="controls" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <!-- VIEW 2: QUẢN LÝ HỌC SINH TOÀN HỆ THỐNG -->
+                <div id="student-view" class="view-section hidden">
+                    <div class="controls">
                         <div class="search-box">
-                            <input type="text" id="searchInput" placeholder="Tìm kiếm theo tên hoặc SĐT...">
+                            <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm theo Họ tên hoặc Số điện thoại...">
                         </div>
                         <div class="filter-box">
                             <select id="classFilter">
                                 <option value="">-- Tất cả khối lớp --</option>
                             </select>
                         </div>
-                        <button id="btnAddStudent" style="padding: 0.75rem 1.5rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; white-space: nowrap;">+ Thêm Học Sinh</button>
+                        <button id="btnAddStudent" class="btn-add-student">+ Thêm Học Sinh Mới</button>
                     </div>
-                    
-                    <!-- Dùng chung table cho cả 2 view, ta sẽ đưa nó ra ngoài view hoặc dùng CSS để hiển thị khi cần.
-                         Nhưng tốt nhất là chuyển hẳn nó ra dùng chung, hoặc chỉ đặt nó trong class-view nếu click vào thẻ,
-                         nhưng click vào thẻ thì sang student-view luôn. -->
-                    <div class="table-container" id="tableContainer" style="display: none;">
-                        <div class="table-header-info" id="currentViewInfo" style="padding: 1rem; font-weight: bold; color: var(--primary-color);">Tất cả Học sinh</div>
+
+                    <div id="studentCounter" class="student-counter"></div>
+
+                    <div class="table-container" id="tableContainer">
+                        <div class="table-header-info" id="currentViewInfo">Tất cả Học sinh</div>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>STT</th>
+                                    <th class="col-stt">STT</th>
                                     <th>Họ và Tên</th>
-                                    <th>Lớp</th>
-                                    <th>Số ĐT</th>
-                                    <th>Môn Học</th>
+                                    <th class="col-grade">Khối Lớp</th>
+                                    <th class="col-phone">Số Điện Thoại</th>
+                                    <th>Phân Ban & Môn Học</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody">
-                                <!-- Data populated via JS -->
+                                <!-- Populated dynamically via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -134,48 +137,48 @@
         </main>
     </div>
 
-    <!-- Student Detail Modal -->
+    <!-- Modal 1: Chi Tiết & Chỉnh Sửa / Thêm Học Sinh -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeModal">&times;</span>
-            <h2>Chi Tiết Học Sinh</h2>
+            <h2 id="modalTitle">Chi Tiết Học Sinh</h2>
             <form id="studentForm">
                 <input type="hidden" id="modalStudentId">
                 <div class="form-group">
-                    <label>Họ: <span style="color:red">*</span></label>
-                    <input type="text" id="modalHo" required>
+                    <label for="modalHo">Họ: <span class="required-mark">*</span></label>
+                    <input type="text" id="modalHo" required placeholder="Nhập Họ & tên lót">
                 </div>
                 <div class="form-group">
-                    <label>Tên: <span style="color:red">*</span></label>
-                    <input type="text" id="modalTen" required>
+                    <label for="modalTen">Tên: <span class="required-mark">*</span></label>
+                    <input type="text" id="modalTen" required placeholder="Nhập Tên">
                 </div>
                 <div class="form-group">
-                    <label>Lớp (vd: 6): <span style="color:red">*</span></label>
-                    <input type="text" id="modalLop" required>
+                    <label for="modalLop">Khối Lớp: <span class="required-mark">*</span></label>
+                    <input type="text" id="modalLop" required placeholder="Ví dụ: 6, 7, 8...">
                 </div>
                 <div class="form-group">
-                    <label>SĐT:</label>
-                    <input type="text" id="modalSdt">
+                    <label for="modalSdt">Số ĐT:</label>
+                    <input type="text" id="modalSdt" placeholder="Nhập số điện thoại phụ huynh/học sinh">
                 </div>
                 <div class="form-group">
-                    <label>Toán:</label>
-                    <input type="text" id="modalToan" placeholder="vd: A, B">
+                    <label for="modalToan">Toán:</label>
+                    <input type="text" id="modalToan" placeholder="Phân ban (vd: A, B...)">
                 </div>
                 <div class="form-group">
-                    <label>Văn:</label>
-                    <input type="text" id="modalVan" placeholder="vd: A, B">
+                    <label for="modalVan">Văn:</label>
+                    <input type="text" id="modalVan" placeholder="Phân ban (vd: A, B...)">
                 </div>
                 <div class="form-group">
-                    <label>Anh Văn:</label>
-                    <input type="text" id="modalAv" placeholder="vd: A, B">
+                    <label for="modalAv">Anh Văn:</label>
+                    <input type="text" id="modalAv" placeholder="Phân ban (vd: A, B...)">
                 </div>
                 <div class="form-group">
-                    <label>Hóa:</label>
-                    <input type="text" id="modalHoa" placeholder="vd: A, B">
+                    <label for="modalHoa">Hóa:</label>
+                    <input type="text" id="modalHoa" placeholder="Phân ban (vd: A, B...)">
                 </div>
                 <div class="form-group">
-                    <label>Lý:</label>
-                    <input type="text" id="modalLy" placeholder="vd: A, B">
+                    <label for="modalLy">Lý:</label>
+                    <input type="text" id="modalLy" placeholder="Phân ban (vd: A, B...)">
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn-save">Lưu Thay Đổi</button>
@@ -185,26 +188,27 @@
         </div>
     </div>
 
-    <!-- Bulk Move Modal -->
+    <!-- Modal 2: Chuyển Lớp Hàng Loạt (Bulk Move) -->
     <div id="bulkMoveModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content modal-sm">
             <span class="close-btn" id="closeBulkMoveModal">&times;</span>
-            <h2>Chuyển Lớp</h2>
-            <p>Đang thao tác trên môn: <strong id="bulkMoveSubjectInfo"></strong></p>
-            <div class="form-group">
-                <label>Nhập phân ban mới (Ví dụ: A, B, A1...): <span style="color:red">*</span></label>
-                <input type="text" id="modalNewSubjectClass" required placeholder="Nhập tên lớp mới...">
-                <small style="color: #666; display: block; margin-top: 5px;">Mẹo: Nhập khoảng trắng để xóa học sinh khỏi môn này.</small>
+            <h2>Chuyển Lớp Hàng Loạt</h2>
+            <p class="modal-subtitle">Đang thao tác trên môn: <strong id="bulkMoveSubjectInfo"></strong></p>
+            <div class="form-group flex-column">
+                <label for="modalNewSubjectClass">Nhập phân ban mới: <span class="required-mark">*</span></label>
+                <input type="text" id="modalNewSubjectClass" placeholder="Ví dụ: A, B, A1...">
+                <small class="form-hint">💡 Mẹo: Nhập khoảng trắng để xóa học sinh khỏi môn này.</small>
             </div>
             <div class="form-actions">
-                <button type="button" id="btnConfirmBulkMove" class="btn-save">Chuyển Lớp</button>
+                <button type="button" id="btnConfirmBulkMove" class="btn-save">Xác Nhận Chuyển</button>
                 <button type="button" class="btn-cancel" id="cancelBulkMoveModal">Hủy</button>
             </div>
         </div>
     </div>
 
-    <!-- Supabase SDK -->
+    <!-- Supabase SDK & App Script -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>
+

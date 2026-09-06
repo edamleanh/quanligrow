@@ -5,3 +5,5 @@ DanhSachTruatXuat.zip
 DanhSach_*.xlsx
 class_status.json
 .env
+__pycache__/
+
