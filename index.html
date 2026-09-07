@@ -190,34 +190,10 @@
             </div>
           </div>
 
-          <!-- TRANSFER CLASS CARD -->
-          <div class="card" style="border-color: var(--primary-border);">
-            <h4 style="font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 12px;">
-              <i class="fa-solid fa-right-left"></i> Thay Đổi Lớp Học (Chuyển Lớp)
-            </h4>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
-              Chuyển học sinh sang lớp mới. Khoản nợ đợt ở lớp cũ (nếu có) sẽ được tự động bảo lưu nối tiếp và hiển thị khung đỏ trong POS.
-            </p>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Chọn Lớp Học Mới</label>
-                <select id="page-transfer-to-class-select" class="form-control-simple"></select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Lý Do Chuyển Lớp</label>
-                <input type="text" id="page-transfer-reason-input" class="form-control-simple" placeholder="Ví dụ: Đổi ca học, trùng lịch...">
-              </div>
-            </div>
-            <button class="btn btn-primary" id="btn-page-execute-transfer">
-              <i class="fa-solid fa-arrow-right-arrow-left"></i> Xác Nhận Chuyển Lớp
-            </button>
-          </div>
-
           <!-- DETAILS TABS -->
           <div class="card">
             <div class="modal-tabs" id="student-detail-page-tabs">
               <div class="tab-item active" data-target="tab-page-student-enrolled">Lớp Đã Ghi Danh</div>
-              <div class="tab-item" data-target="tab-page-student-transfers">Lịch Sử Chuyển Lớp (Transfers)</div>
               <div class="tab-item" data-target="tab-page-student-receipts">Lịch Sử Biên Lai Thu Tiền</div>
             </div>
 
@@ -233,22 +209,6 @@
                     </tr>
                   </thead>
                   <tbody id="tbl-page-student-enrolled-body"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div id="tab-page-student-transfers" class="tab-content">
-              <div class="table-container">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Lớp Cũ</th>
-                      <th>Lớp Mới</th>
-                      <th>Ngày Chuyển</th>
-                      <th>Lý Do Chuyển Lớp</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbl-page-student-transfers-body"></tbody>
                 </table>
               </div>
             </div>

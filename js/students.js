@@ -78,11 +78,6 @@ async function openStudentDetailPage(studentId, updateHash = true) {
     document.getElementById('page-student-full-name').textContent = student.full_name;
     document.getElementById('page-student-meta').textContent = `Mã HS: ${student.student_code} | SĐT: ${student.phone || 'Chưa có'} | Khối: ${student.grade || 'N/A'} | Ghi chú: ${student.notes || 'Không có'}`;
 
-    // Populate Transfer Class Select Dropdown
-    const classes = await ApiService.getClasses();
-    const selectTransfer = document.getElementById('page-transfer-to-class-select');
-    selectTransfer.innerHTML = classes.map(c => `<option value="${c.class_id}">${c.class_name} (${c.subject_name})</option>`).join('');
-
     // Tab 1: Enrolled Classes
     const tblEnrolled = document.getElementById('tbl-page-student-enrolled-body');
     tblEnrolled.innerHTML = enrollments.length > 0 ? enrollments.map(e => `
@@ -97,17 +92,6 @@ async function openStudentDetailPage(studentId, updateHash = true) {
         </td>
       </tr>
     `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa ghi danh lớp nào.</td></tr>`;
-
-    // Tab 2: Class Transfers
-    const tblTransfers = document.getElementById('tbl-page-student-transfers-body');
-    tblTransfers.innerHTML = transfers.length > 0 ? transfers.map(t => `
-      <tr>
-        <td><strong style="color: var(--danger-red);">${t.from_class ? t.from_class.class_name : 'N/A'}</strong></td>
-        <td><strong style="color: var(--primary);">${t.to_class ? t.to_class.class_name : 'N/A'}</strong></td>
-        <td>${new Date(t.transfer_date).toLocaleDateString('vi-VN')}</td>
-        <td>${t.reason || 'N/A'}</td>
-      </tr>
-    `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa có lịch sử chuyển lớp.</td></tr>`;
 
     // Tab 3: Receipts History with exact Date/Time and Itemized Breakdown (Class, Subject, Batch, Fee)
     const tblReceipts = document.getElementById('tbl-page-student-receipts-body');
@@ -231,44 +215,6 @@ function initStudentsEvents() {
         alert('Lưu thông tin học sinh thành công!');
       } catch (err) {
         alert('Lỗi lưu học sinh: ' + err.message);
-      }
-    });
-  }
-
-  // Execute Class Transfer on Full Page View
-  const btnPageTransfer = document.getElementById('btn-page-execute-transfer');
-  if (btnPageTransfer) {
-    btnPageTransfer.addEventListener('click', async () => {
-      if (!currentSelectedStudentId) return;
-
-      const toClassId = document.getElementById('page-transfer-to-class-select').value;
-      const reason = document.getElementById('page-transfer-reason-input').value.trim();
-
-      if (!toClassId) {
-        alert('Vui lòng chọn lớp học mới!');
-        return;
-      }
-
-      const data = await ApiService.getStudentDetails(currentSelectedStudentId);
-      const activeEnr = data.enrollments.find(e => e.status === 'ACTIVE');
-      if (!activeEnr) {
-        alert('Học sinh hiện chưa ở trong lớp nào để chuyển!');
-        return;
-      }
-
-      if (activeEnr.classes.class_id === toClassId) {
-        alert('Học sinh đang học đúng lớp này rồi!');
-        return;
-      }
-
-      if (confirm(`Xác nhận chuyển học sinh sang lớp mới? Khoản nợ đợt cũ sẽ được lưu nối tiếp trong POS.`)) {
-        try {
-          await ApiService.transferStudentClass(currentSelectedStudentId, activeEnr.classes.class_id, toClassId, reason);
-          alert('Chuyển lớp thành công! Khoản nợ cũ (nếu có) sẽ hiển thị trong khung đỏ khi Thu tiền.');
-          openStudentDetailPage(currentSelectedStudentId);
-        } catch (err) {
-          alert('Lỗi chuyển lớp: ' + err.message);
-        }
       }
     });
   }
