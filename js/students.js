@@ -39,6 +39,7 @@ export async function renderStudentsView(container) {
               <th>Họ Và Tên Học Sinh</th>
               <th>Số Điện Thoại</th>
               <th>Khối</th>
+              <th>Các Lớp Đang Học</th>
               <th>Trạng Thái</th>
               <th>Ghi Chú</th>
               <th>Thao Tác</th>
@@ -46,7 +47,7 @@ export async function renderStudentsView(container) {
           </thead>
           <tbody id="student-table-body">
             <tr>
-              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Đang tải danh sách học sinh...</td>
+              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Đang tải danh sách học sinh...</td>
             </tr>
           </tbody>
         </table>
@@ -71,31 +72,49 @@ async function loadStudentsData() {
   const grade = document.getElementById('filter-grade').value;
 
   const tbody = document.getElementById('student-table-body');
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Đang tải dữ liệu...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Đang tải dữ liệu...</td></tr>`;
 
   try {
     const { data: students, count } = await api.getStudents({ search, grade });
 
     if (students.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Không tìm thấy học sinh nào phù hợp.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Không tìm thấy học sinh nào phù hợp.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = students.slice(0, 50).map(s => `
-      <tr>
-        <td><strong style="color: var(--teal-600);">${s.student_code}</strong></td>
-        <td><strong>${s.full_name}</strong></td>
-        <td>${s.phone ? `📞 ${s.phone}` : '<span style="color: var(--text-light); italic">Chưa có SĐT</span>'}</td>
-        <td><span class="badge badge-current">Khối ${s.grade}</span></td>
-        <td><span class="badge badge-active">${s.status === 'DANG_HOC' ? 'Đang Học' : s.status}</span></td>
-        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-muted);">${s.notes || '-'}</td>
-        <td>
-          <button class="btn btn-secondary btn-sm" onclick="window.location.hash='#/students/${s.student_id}'">
-            👁️ Xem Chi Tiết
-          </button>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = students.slice(0, 50).map(s => {
+      const activeClasses = (s.enrollments || [])
+        .filter(e => e.status === 'ACTIVE')
+        .map(e => e.classes ? e.classes.class_name : '')
+        .filter(Boolean);
+
+      const activeClassesHtml = activeClasses.length > 0
+        ? activeClasses.map(cName => `<span class="badge badge-active" style="margin-right: 4px; margin-bottom: 2px;">${cName}</span>`).join('')
+        : `<span style="color: var(--text-light); font-style: italic; font-size: 12px;">Chưa có lớp</span>`;
+
+      const statusBadgeHtml = s.status === 'DA_TN'
+        ? `<span class="badge badge-upcoming">Đã Tốt Nghiệp</span>`
+        : activeClasses.length > 0
+          ? `<span class="badge badge-active">Đang Học</span>`
+          : `<span class="badge badge-current">Chưa Có Lớp</span>`;
+
+      return `
+        <tr>
+          <td><strong style="color: var(--teal-600);">${s.student_code}</strong></td>
+          <td><strong>${s.full_name}</strong></td>
+          <td>${s.phone ? `📞 ${s.phone}` : '<span style="color: var(--text-light); italic">Chưa có SĐT</span>'}</td>
+          <td><span class="badge badge-current">Khối ${s.grade}</span></td>
+          <td style="max-width: 250px; font-size: 13px;">${activeClassesHtml}</td>
+          <td>${statusBadgeHtml}</td>
+          <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-muted);">${s.notes || '-'}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="window.location.hash='#/students/${s.student_id}'">
+              👁️ Xem Chi Tiết
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     document.getElementById('student-pagination').innerText = `Hiển thị ${Math.min(50, students.length)} / Tổng số ${count} học sinh`;
   } catch (err) {

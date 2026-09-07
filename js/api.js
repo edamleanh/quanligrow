@@ -58,7 +58,7 @@ export const api = {
 
   // --- STUDENTS ---
   async getStudents(options = {}) {
-    let query = supabase.from('students').select('*', { count: 'exact' });
+    let query = supabase.from('students').select('*, enrollments(status, classes(class_name))', { count: 'exact' });
     if (options.grade) query = query.eq('grade', options.grade);
     if (options.status) query = query.eq('status', options.status);
     if (options.search) {
