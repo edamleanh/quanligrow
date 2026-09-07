@@ -66,8 +66,11 @@ async function openStudentDetailPage(studentId, updateHash = true) {
   currentSelectedStudentId = studentId;
 
   if (updateHash) {
-    window.location.hash = `#/students/detail?id=${studentId}`;
-    return;
+    const targetHash = `#/students/detail?id=${studentId}`;
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
+      return;
+    }
   }
 
   try {

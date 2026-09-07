@@ -45,8 +45,11 @@ async function openTeacherDetailPage(teacherId, updateHash = true) {
   currentSelectedTeacherId = teacherId;
 
   if (updateHash) {
-    window.location.hash = `#/teachers/detail?id=${teacherId}`;
-    return;
+    const targetHash = `#/teachers/detail?id=${teacherId}`;
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
+      return;
+    }
   }
 
   try {

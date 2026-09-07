@@ -48,8 +48,11 @@ async function openClassDetailPage(classId, updateHash = true) {
   currentSelectedClassId = classId;
 
   if (updateHash) {
-    window.location.hash = `#/classes/detail?id=${classId}`;
-    return;
+    const targetHash = `#/classes/detail?id=${classId}`;
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
+      return;
+    }
   }
 
   try {
