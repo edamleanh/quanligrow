@@ -68,12 +68,12 @@ Hệ thống phân chia 3 nhóm quyền nghiệp vụ chính:
 
 ### 2.4. Quản lý Lớp học & 12 Đợt học (Classes & 12 Batches per Academic Year)
 - **Quy định Lớp học**:
-  - Mỗi Lớp học gắn liền với một Niên khóa cụ thể và do 1 Giáo viên phụ trách chính.
+  - Mỗi Lớp học gắn liền với một Niên khóa cụ thể và do 1 Giáo viên phụ trách chính (có thể thay đổi giáo viên phụ trách theo đợt).
   - Mức học phí mặc định: Môn thông thường (Toán, Lý, Hóa, Anh Văn, GVNN) mặc định **350.000 VNĐ / đợt**; Môn Văn mặc định **300.000 VNĐ / đợt**. Người quản trị có quyền điều chỉnh mức học phí cho từng lớp.
 - **Tự động khởi tạo 12 Đợt học**:
   - Khi tạo mới một Lớp học, hệ thống **tự động sinh sẵn 12 Đợt học** (Từ Đợt 1 đến Đợt 12).
   - Trạng thái Đợt học: *Đang học* (đợt hiện tại), *Sắp tới* (chưa học), *Đã hoàn thành* (kết thúc đợt).
-  - Quản lý học phí đợt: Cho phép điều chỉnh tên đợt học và mức học phí riêng cho từng đợt nếu có sự thay đổi.
+  - Quản lý học phí đợt: Cho phép điều chỉnh tên đợt học, giáo viên phụ trách và mức học phí riêng cho từng đợt nếu có sự thay đổi.
 
 ### 2.5. Nghiệp vụ Chuyển Lớp giữa chừng & Bảo lưu Công nợ (Student Class Transfers)
 - **Chuyển lớp giữa chừng**:
@@ -108,3 +108,84 @@ Hệ thống phân chia 3 nhóm quyền nghiệp vụ chính:
   - Cho phép xem danh sách học sinh theo Lớp và Đợt học phân loại thành: *Đã đóng đủ*, *Đóng thiếu*, và *Chưa đóng*.
 - **Bộ lọc danh sách nợ**:
   - Hỗ trợ lọc nhanh danh sách các học sinh chưa hoàn thành học phí để trung tâm liên hệ nhắc phí cho phụ huynh.
+
+---
+
+## 4. MÔ TẢ CHI TIẾT CÁC MODULE GIAO DIỆN & TÍNH NĂNG THỰC TẾ (SYSTEM MODULES & UI SPECIFICATIONS)
+
+### 4.1. Khung Giao Diện Chung & Điều Hướng (Global Layout & Navigation)
+- **Thanh Header Hệ thống**:
+  - Tên đơn vị: **Trung Tâm Ngoại Ngữ Grow** (Tông màu Emerald Green).
+  - **Thanh Chuyển Quyền Nhanh 1-Click (Quick Switcher)**: Cho phép chuyển đổi linh hoạt giữa 3 vai trò *Admin (Toàn quyền)*, *Thu Ngân (Cashier)*, và *Giáo Viên (Teacher)* để kiểm tra giao diện.
+  - **Bộ Lọc Phân Theo Năm Học (Academic Year Selector)**: Dropdown chọn năm học làm việc (VD: `2025-2026`, `2026-2027`...), tự động đồng bộ tất cả dữ liệu hiển thị.
+- **Thanh Menu Điều Hướng Bên (Sidebar Navigation)**:
+  - 📊 `Dashboard` (Tổng quan)
+  - 👨‍🎓 `Quản Lý Học Sinh`
+  - 🏫 `Quản Lý Lớp Học`
+  - 👨‍🏫 `Quản Lý Giáo Viên`
+  - 💳 `POS Thu Tiền Học Phí`
+
+### 4.2. Module 1: Dashboard (Tổng Quan Doanh Thu & Học Vụ)
+- **4 Thẻ Chỉ Số Tổng Quan**:
+  - *Doanh thu hôm nay (VNĐ)*: Tổng số tiền thu học phí trong ngày.
+  - *Tổng số học sinh*: Sĩ số học sinh toàn trung tâm (phân loại đang học / đã tốt nghiệp).
+  - *Số lớp đang hoạt động*: Tổng số lớp đang mở trong năm học.
+  - *Số lớp đã kết thúc*: Số lớp đã hoàn thành chương trình.
+- **Bảng Lớp Học Kết Thúc Cần Thu Nợ**: Danh sách các lớp đã xong đợt nhưng còn công nợ chưa thu, hỗ trợ nút thao tác mở POS thu nợ nhanh.
+
+### 4.3. Module 2: Quản Lý Học Sinh (Students Management)
+- **Trang Danh Sách Học Sinh**:
+  - Ô tìm kiếm theo Họ tên, SĐT, Mã HS.
+  - Nút `+ Thêm Mới Học Sinh` mở Form nhập hồ sơ học sinh.
+  - Bảng danh sách hiển thị: Mã HS, Họ tên, Khối, Các lớp đang học, Trạng thái (`Đang học`, `Chưa có lớp`, `Đã tốt nghiệp`), Nút `Xem Trang Chi Tiết`.
+- **Trang Chi Tiết Học Sinh Full-Page**:
+  - Profile Card: Họ tên học sinh, Mã HS, SĐT, Khối, Ghi chú + Nút `Sửa Thông Tin Cá Nhân`.
+  - **Tab 1: Lớp Đã Ghi Danh**: Bảng danh sách các lớp học sinh đăng ký (Tên lớp, Học phí/đợt, Ngày đăng ký, Trạng thái ghi danh).
+  - **Tab 2: Lịch Sử Biên Lai Thu Tiền**: Bảng liệt kê toàn bộ biên lai đã thu:
+    - Mã Biên Lai, Ngày & Giờ lập chính xác (`HH:mm:ss DD/MM/YYYY`), Loại thu (`In máy` / `Nhập tay`), **Chi Tiết Mục Đóng** (hiển thị rõ: *Tên Lớp - Tên Môn - Đợt học: Số tiền từng đợt*), Tổng tiền thu, Mã biên lai tay (nếu có).
+
+### 4.4. Module 3: Quản Lý Lớp Học (Classes Management)
+- **Trang Danh Sách Lớp Học**:
+  - Tìm kiếm theo Tên lớp, Giáo viên.
+  - Bộ lọc Phân theo Năm học.
+  - Nút `+ Tạo Lớp Học Mới`: Nhập tên lớp, khối, môn, niên khóa, giáo viên, học phí đợt. Hệ thống **tự động khởi tạo 12 Đợt học**.
+  - Bảng danh sách: Tên lớp, Môn & Khối, Năm học, Giáo viên phụ trách, Học phí gốc (.000 VNĐ), Trạng thái (`Đang Mở` / `Đã Khóa`), Nút `Xem Chi Tiết Lớp`.
+- **Trang Chi Tiết Lớp Học Full-Page**:
+  - Card thông tin tổng quan lớp + Nút `Chỉnh Sửa Thông Tin Lớp`.
+  - **Tab 1: Quản Lý 12 Đợt Học**: Bảng hiển thị 12 đợt (Số đợt, Tên đợt, Học phí đợt (.000 VNĐ), Trạng thái đợt `ĐANG HỌC` / `UPCOMING` / `COMPLETED`, Giáo viên đợt, Nút `Sửa Đợt` để đổi tên, giáo viên & học phí đợt).
+  - **Tab 2: Danh Sách Học Sinh Trong Lớp**: Sĩ số học sinh, Bảng danh sách học sinh ghi danh & trạng thái đóng phí đợt hiện tại.
+
+### 4.5. Module 4: Quản Lý Giáo Viên (Teachers Management)
+- **Trang Danh Sách Giáo Viên**:
+  - Ô tìm kiếm theo Tên GV, SĐT, Môn phụ trách.
+  - Nút `+ Thêm Mới Giáo Viên`: Mở Form nhập tên, SĐT (tùy chọn), Môn chuyên môn (Dropdown chọn từ danh mục chuẩn).
+  - Bảng danh sách: Mã GV, Họ tên, SĐT (hiển thị *"Chưa có SĐT"* nếu trống), Email, Môn chuyên môn, Số lớp phụ trách, Nút `Xem Trang Chi Tiết & Payroll`.
+- **Trang Chi Tiết Giáo Viên Full-Page**:
+  - Card thông tin giáo viên: Họ tên, Mã GV, SĐT, Email, Môn chuyên môn.
+  - **Tab 1: Lớp Đang & Đã Phụ Trách**: Danh sách toàn bộ các lớp & đợt phân công dạy.
+  - **Tab 2: Báo Cáo Thù Lao & Doanh Thu Đợt (Payroll)**: Bảng tổng hợp doanh thu thực thu theo từng đợt học giáo viên trực tiếp phụ trách.
+
+### 4.6. Module 5: POS Thu Tiền Học Phí & Tra Cứu Nợ Phí (POS Payments & Debt Report)
+- **Khung 1: Tìm Kiếm & Chọn Học Sinh**:
+  - Ô tìm kiếm tự động gợi ý theo Tên / SĐT / Mã HS.
+  - **Banner Cảnh báo Học sinh mới**: Hiển thị khi đóng phí lần đầu cho lớp để kiểm tra giảm giá/trừ tiền học giữa chừng.
+- **Khung 2: Danh Sách 12 Đợt Học Phân Theo Lớp**:
+  - Gom nhóm danh sách đợt học theo từng lớp học sinh đang học.
+  - Màu sắc nhận diện đợt: 🟢 *Đã đóng*, 🟡 *Đợt hiện tại*, 🔵 *Sắp tới*, 🔴 *Nợ quá hạn*.
+  - Ô nhập học phí tùy chỉnh (.000 VNĐ) cho từng đợt chọn.
+- **Khung 3: Lập Biên Lai & In Phiếu Thu**:
+  - Phân loại `In Máy` hoặc `Nhập Tay`.
+  - Tự động tính tổng tiền.
+  - Nút `Xác Nhận Thu Tiền & In Phiếu Thu`: Lưu CSDL và mở Popup in biên lai chuẩn cho phụ huynh.
+- **Tab 2 POS: Tra Cứu Báo Cáo Nợ Phí (Debt Report)**:
+  - Chọn [Lớp học] + [Đợt học] để tra cứu danh sách học sinh *Đã đóng đủ*, *Đóng thiếu*, *Chưa đóng*.
+
+### 4.7. Bảng Tổng Hop Các Popup / Modal Trong Hệ Thống
+
+| STT | Tên Popup / Modal | Mã HTML ID | Chức Năng Nghiệp Vụ |
+| :--- | :--- | :--- | :--- |
+| 1 | Form Học Sinh | `modal-student-form` | Thêm mới hoặc cập nhật hồ sơ cá nhân học sinh |
+| 2 | Form Lớp Học | `modal-class-form` | Tạo lớp mới theo niên khóa & tự động sinh 12 Đợt học |
+| 3 | Form Giáo Viên | `modal-teacher-form` | Thêm mới / sửa thông tin giáo viên (SĐT tùy chọn, môn chọn Dropdown) |
+| 4 | Sửa Đợt Học | `modal-batch-form` | Đổi tên đợt, giáo viên đợt & điều chỉnh học phí đợt |
+| 5 | In Biên Lai POS | `modal-receipt-print` | Hiển thị phiếu thu mẫu chuẩn in máy cho phụ huynh |
