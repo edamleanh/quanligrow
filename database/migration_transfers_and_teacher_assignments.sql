@@ -2,9 +2,14 @@
 -- MIGRATION SCRIPT: Add Class Transfers, Debt Carry-Over & Teacher Batch Assignments
 -- =============================================================================
 
--- 1. Safely recreate enrollment_status ENUM with 'TRANSFERRED' value (bypasses PG 55P04 lock)
+-- 0. Drop dependent views first to allow enum type modification
+DROP VIEW IF EXISTS v_class_details CASCADE;
+DROP VIEW IF EXISTS v_debt_summary CASCADE;
+DROP VIEW IF EXISTS v_teacher_batch_payroll CASCADE;
+
+-- 1. Safely recreate enrollment_status ENUM with 'TRANSFERRED' value
 ALTER TABLE enrollments ALTER COLUMN status TYPE VARCHAR(50);
-DROP TYPE IF EXISTS enrollment_status;
+DROP TYPE IF EXISTS enrollment_status CASCADE;
 CREATE TYPE enrollment_status AS ENUM ('ACTIVE', 'WITHDRAWN', 'TRANSFERRED');
 ALTER TABLE enrollments ALTER COLUMN status TYPE enrollment_status USING status::enrollment_status;
 ALTER TABLE enrollments ALTER COLUMN status SET DEFAULT 'ACTIVE';
@@ -36,7 +41,24 @@ CREATE TABLE IF NOT EXISTS class_teacher_assignments (
     CONSTRAINT unique_batch_teacher UNIQUE (batch_id)
 );
 
--- 5. Update v_debt_summary View to include both ACTIVE and TRANSFERRED classes
+-- 5. Recreate View: Full Class Overview with Teacher & Subject
+CREATE OR REPLACE VIEW v_class_details AS
+SELECT 
+    c.class_id,
+    c.class_name,
+    c.grade,
+    s.subject_name,
+    t.full_name AS teacher_name,
+    c.default_fee_rate,
+    c.is_active,
+    COUNT(e.student_id) AS enrolled_count
+FROM classes c
+JOIN subjects s ON c.subject_id = s.subject_id
+LEFT JOIN teachers t ON c.teacher_id = t.teacher_id
+LEFT JOIN enrollments e ON c.class_id = e.class_id AND e.status = 'ACTIVE'
+GROUP BY c.class_id, s.subject_name, t.full_name;
+
+-- 6. Recreate View: Student Debt & Payment Status per Class & Batch (Supports Active & Transferred Classes)
 CREATE OR REPLACE VIEW v_debt_summary AS
 SELECT 
     b.batch_id,
@@ -65,7 +87,7 @@ LEFT JOIN receipt_items ri ON ri.receipt_id = r.receipt_id AND ri.class_id = c.c
 WHERE e.status IN ('ACTIVE', 'TRANSFERRED')
 GROUP BY b.batch_id, b.batch_name, b.batch_number, c.class_id, c.class_name, st.student_id, st.student_code, st.full_name, st.phone, b.fee_rate, e.status;
 
--- 6. Create v_teacher_batch_payroll View for Teacher Payroll per Batch
+-- 7. Recreate View: Teacher Batch Payroll & Revenue Summary per Batch
 CREATE OR REPLACE VIEW v_teacher_batch_payroll AS
 SELECT 
     t.teacher_id,
@@ -86,7 +108,7 @@ LEFT JOIN teachers t ON COALESCE(b.teacher_id, c.teacher_id) = t.teacher_id
 LEFT JOIN receipt_items ri ON ri.batch_id = b.batch_id
 GROUP BY t.teacher_id, t.teacher_code, t.full_name, c.class_id, c.class_name, b.batch_id, b.batch_number, b.batch_name, b.fee_rate, b.status;
 
--- 7. Enable RLS and Policies
+-- 8. Enable RLS and Policies
 ALTER TABLE class_transfers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE class_teacher_assignments ENABLE ROW LEVEL SECURITY;
 
