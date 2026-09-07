@@ -71,5 +71,5 @@ BEGIN
             SET batch_name = EXCLUDED.batch_name,
                 fee_rate = EXCLUDED.fee_rate;
         END LOOP;
-    END FOR;
+    END LOOP;
 END $$;
