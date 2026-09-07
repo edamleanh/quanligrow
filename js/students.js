@@ -1,4 +1,4 @@
-// EduManager V2 - Module Quản Lý Học Sinh (Hỗ trợ Trang Chi Tiết Mới)
+// EduManager V2 - Module Quản Lý Học Sinh (Cập nhật giao diện danh sách chính)
 
 let currentSelectedStudentId = null;
 
@@ -20,24 +20,37 @@ function renderStudentsTable(students) {
   if (!tbody) return;
 
   if (students.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Không tìm thấy học sinh nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Không tìm thấy học sinh nào.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = students.map(s => {
-    const activeEnrollment = (s.enrollments || []).find(e => e.status === 'ACTIVE');
-    const className = activeEnrollment && activeEnrollment.classes ? activeEnrollment.classes.class_name : 'Chưa ghi danh';
-    const statusBadge = activeEnrollment 
-      ? `<span class="badge badge-active">Đang Học (${className})</span>` 
-      : `<span class="badge badge-completed">Chưa Có Lớp</span>`;
+    // 1. Get ALL Active Enrolled Classes for this student
+    const activeEnrollments = (s.enrollments || []).filter(e => e.status === 'ACTIVE');
+    const classNamesList = activeEnrollments
+      .map(e => e.classes ? e.classes.class_name : null)
+      .filter(n => n);
+
+    const displayClasses = classNamesList.length > 0 
+      ? classNamesList.map(n => `<span class="badge badge-active" style="margin-right: 4px; margin-bottom: 2px;">${n}</span>`).join('')
+      : `<span style="color: var(--text-muted); font-size: 13px;">Chưa có lớp</span>`;
+
+    // 2. Format Status Label EXACTLY as requested: "đang học", "chưa có lớp", "đã tốt nghiệp"
+    let statusBadge = '';
+    if (s.status === 'DA_TN') {
+      statusBadge = `<span class="badge" style="background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;"><i class="fa-solid fa-graduation-cap"></i> Đã tốt nghiệp</span>`;
+    } else if (activeEnrollments.length > 0) {
+      statusBadge = `<span class="badge badge-active"><i class="fa-solid fa-circle" style="font-size: 8px;"></i> Đang học</span>`;
+    } else {
+      statusBadge = `<span class="badge badge-completed"><i class="fa-solid fa-circle-notch" style="font-size: 10px;"></i> Chưa có lớp</span>`;
+    }
 
     return `
       <tr>
         <td><strong>${s.student_code || s.student_id.substring(0, 8)}</strong></td>
-        <td><strong>${s.full_name}</strong></td>
-        <td>${s.phone || 'N/A'}</td>
-        <td>${s.notes || 'N/A'}</td>
-        <td>${className}</td>
+        <td><strong style="font-size: 15px;">${s.full_name}</strong></td>
+        <td><span class="badge badge-secondary" style="background: #f1f5f9; color: #334155;">Khối ${s.grade || 'N/A'}</span></td>
+        <td>${displayClasses}</td>
         <td>${statusBadge}</td>
         <td>
           <button class="btn btn-sm btn-primary" onclick="openStudentDetailPage('${s.student_id}')">
@@ -58,7 +71,7 @@ async function openStudentDetailPage(studentId) {
 
     // Header Info
     document.getElementById('page-student-full-name').textContent = student.full_name;
-    document.getElementById('page-student-meta').textContent = `Mã HS: ${student.student_code} | SĐT: ${student.phone || 'Chưa có'} | Ghi chú: ${student.notes || 'Không có'}`;
+    document.getElementById('page-student-meta').textContent = `Mã HS: ${student.student_code} | SĐT: ${student.phone || 'Chưa có'} | Khối: ${student.grade || 'N/A'} | Ghi chú: ${student.notes || 'Không có'}`;
 
     // Populate Transfer Class Select Dropdown
     const classes = await ApiService.getClasses();
