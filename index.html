@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <!-- Header Navigation Bar -->
+    <!-- App Header -->
     <header class="app-header">
         <div class="top-bar">
             <!-- Brand Logo & Title -->
@@ -21,28 +21,76 @@
                 </div>
             </div>
 
-            <!-- Quick 1-Click Role Switcher Bar -->
-            <div class="role-switcher-bar">
-                <button class="role-btn" data-role="ADMIN">
-                    <span>👑</span> Admin
-                </button>
-                <button class="role-btn active" data-role="CASHIER">
-                    <span>💵</span> Thu Ngân
-                </button>
-                <button class="role-btn" data-role="TEACHER">
-                    <span>👨‍🏫</span> Giáo Viên
+            <!-- Logged-in User Profile Header (Hidden when logged out) -->
+            <div id="user-profile-header" style="display: none; align-items: center; gap: 1rem;">
+                <div style="text-align: right;">
+                    <div id="header-user-name" style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">...</div>
+                    <span id="header-user-role" class="badge badge-dang-hoc">...</span>
+                </div>
+                <button id="btn-logout" class="btn btn-secondary btn-sm" style="border-radius: var(--radius-full);">
+                    🚪 Đăng Xuất
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Views Container -->
-    <main class="main-container">
+    <!-- ===================================================================
+         LOGIN VIEW (#view-login)
+         =================================================================== -->
+    <section id="view-login" class="login-wrapper">
+        <div class="login-card">
+            <div class="login-brand-header">
+                <div class="login-brand-logo">G</div>
+                <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">Đăng Nhập Hệ Thống</h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">Trung Tâm Ngoại Ngữ Grow</p>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Tên Đăng Nhập (Username)</label>
+                    <input type="text" id="login-username" class="form-input" placeholder="Nhập tên đăng nhập..." required autocomplete="username">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label class="form-label">Mật Khẩu (Password)</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+                </div>
+
+                <div id="login-error-msg" style="display: none; color: var(--status-completed-text); background-color: var(--status-completed-bg); border: 1px solid var(--status-completed-border); padding: 0.6rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1rem; text-align: center;"></div>
+
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                    🔑 Đăng Nhập Vào Hệ Thống
+                </button>
+            </form>
+
+            <!-- Quick Account Chips Helper for Easy Testing -->
+            <div class="login-chips-wrapper">
+                <div class="login-chips-title">💡 Bấm vào tài khoản bên dưới để điền nhanh:</div>
+                <div class="login-chips-grid">
+                    <div class="login-chip" data-username="admin" data-password="admin123">
+                        <span>👑 <strong>Tài khoản Admin</strong> (Chủ trung tâm)</span>
+                        <code style="font-size: 0.75rem; color: var(--primary);">admin / admin123</code>
+                    </div>
+                    <div class="login-chip" data-username="cashier" data-password="cashier123">
+                        <span>💵 <strong>Tài khoản Thu Ngân</strong> (POS Thu tiền)</span>
+                        <code style="font-size: 0.75rem; color: var(--primary);">cashier / cashier123</code>
+                    </div>
+                    <div class="login-chip" data-username="teacher" data-password="teacher123">
+                        <span>👨‍🏫 <strong>Tài khoản Giáo Viên</strong> (Danh sách lớp)</span>
+                        <code style="font-size: 0.75rem; color: var(--primary);">teacher / teacher123</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Application Container (Hidden when logged out) -->
+    <main id="main-app-content" class="main-container" style="display: none;">
 
         <!-- ===================================================================
              1. CASHIER POS VIEW (#view-cashier)
              =================================================================== -->
-        <section id="view-cashier" style="display: block;">
+        <section id="view-cashier" style="display: none;">
             <div class="page-header">
                 <h2 class="page-title">💵 Thu Tiền Học Phí (Màn Hình POS)</h2>
                 <span class="badge badge-dang-hoc">Quyền Thu Ngân</span>

@@ -16,6 +16,15 @@ export async function searchStudents(query) {
     return await supabaseFetch(endpoint);
 }
 
+export async function authenticateUser(username, password) {
+    if (!username || !password) return null;
+    const users = await supabaseFetch(`users?username=eq.${encodeURIComponent(username.trim())}&password_hash=eq.${encodeURIComponent(password.trim())}`);
+    if (users && users.length > 0) {
+        return users[0];
+    }
+    return null;
+}
+
 export async function getStudentEnrolledClassesAndBatches(studentId) {
     // 1. Get student enrollments
     const enrollments = await supabaseFetch(`enrollments?student_id=eq.${studentId}&status=eq.ACTIVE&select=class_id,classes(*)`);
