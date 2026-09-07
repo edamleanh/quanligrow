@@ -2,16 +2,12 @@
 -- MIGRATION SCRIPT: Add Class Transfers, Debt Carry-Over & Teacher Batch Assignments
 -- =============================================================================
 
--- 1. Add 'TRANSFERRED' value to enrollment_status ENUM
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_enum 
-        WHERE enumtypid = 'enrollment_status'::regtype AND enumlabel = 'TRANSFERRED'
-    ) THEN
-        ALTER TYPE enrollment_status ADD VALUE 'TRANSFERRED';
-    END IF;
-END $$;
+-- 1. Safely recreate enrollment_status ENUM with 'TRANSFERRED' value (bypasses PG 55P04 lock)
+ALTER TABLE enrollments ALTER COLUMN status TYPE VARCHAR(50);
+DROP TYPE IF EXISTS enrollment_status;
+CREATE TYPE enrollment_status AS ENUM ('ACTIVE', 'WITHDRAWN', 'TRANSFERRED');
+ALTER TABLE enrollments ALTER COLUMN status TYPE enrollment_status USING status::enrollment_status;
+ALTER TABLE enrollments ALTER COLUMN status SET DEFAULT 'ACTIVE';
 
 -- 2. Add teacher_id column to batches table if not exists
 ALTER TABLE batches ADD COLUMN IF NOT EXISTS teacher_id UUID REFERENCES teachers(teacher_id) ON DELETE RESTRICT;
