@@ -81,7 +81,8 @@ Hệ thống phân chia 3 nhóm quyền nghiệp vụ chính:
 - **Quản Lý Đợt Nhập Học & Đợt Chuyển Đi (Transfer-In / Transfer-Out Batch Tracking)**:
   - **Nhập học mới giữa chừng**: Khi học sinh gia nhập lớp học từ một Đợt học bất kỳ (Ví dụ: Xin vào lớp từ Đợt 4), hệ thống phải **ghi nhớ chính xác Đợt bắt đầu học (`start_batch_number`)**. Hệ thống chỉ tính học phí và theo dõi nợ phí từ Đợt bắt đầu này trở đi, tuyệt đối không báo nợ ảo các đợt trước đó (Đợt 1, 2, 3).
   - **Chuyển lớp giữa chừng**: Khi học sinh chuyển từ Lớp A sang Lớp B (Ví dụ: Học hết Đợt 4 ở Lớp A rồi chuyển sang Lớp B từ Đợt 5), hệ thống phải **ghi nhớ chính xác Đợt kết thúc ở Lớp A (`end_batch_number = 4`)** và **Đợt bắt đầu ở Lớp B (`start_batch_number = 5`)**.
-  - **Minh bạch sĩ số & công nợ**: Lớp A chỉ tính học phí và sĩ số đến Đợt 4. Lớp B tính học phí và sĩ số từ Đợt 5 trở đi. Tuyệt đối không gây thu trùng học phí ở cùng 1 đợt giữa 2 lớp.
+  - **Đợt học độc lập & Không liên tục giữa các Lớp (Non-contiguous & Independent Batches)**: Các đợt học của mỗi Lớp học được quản lý hoàn toàn độc lập (`batch_id` riêng). Học sinh có thể tham gia các khoảng đợt không liên tục giữa các lớp khác nhau (Ví dụ: Học Lớp A ở Đợt 1-4 $\to$ Học Lớp B ở Đợt 2-5 $\to$ Quay lại Lớp A ở Đợt 6-9). Hệ thống theo dõi chính xác từng đợt học của từng lớp mà không bị xung đột.
+  - **Minh bạch sĩ số & công nợ**: Mỗi dòng đóng tiền trên biên lai ghi nhận chính xác `class_id` và `batch_id` của từng lớp riêng biệt. Tuyệt đối không gây thu trùng học phí hay nhầm lẫn công nợ.
 - **Quy tắc Bảo lưu & Thu nợ Nối tiếp**:
   - Khi học sinh chuyển lớp, nếu **chưa đóng tiền các đợt ở lớp cũ** (Ví dụ: Còn nợ Đợt 2, 3 của Lớp A):
     - Khoản nợ phí đợt học cũ ở Lớp A được **giữ nguyên và bảo lưu** tại đúng Đợt học đó.
