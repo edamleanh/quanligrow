@@ -100,7 +100,7 @@ CREATE TABLE classes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 1.7 Enrollments Table (Phân Lớp & Ghi Danh Học Sinh - Hỗ trợ theo dõi Đợt bắt đầu / Đợt kết thúc)
+-- 1.7 Enrollments Table (Phân Lớp & Ghi Danh Học Sinh - Hỗ trợ nhiều đợt ghi danh/chuyển lớp A -> B -> A)
 CREATE TABLE enrollments (
     enrollment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     student_id UUID NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
@@ -109,7 +109,6 @@ CREATE TABLE enrollments (
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'WITHDRAWN', 'TRANSFERRED')),
     start_batch_number INT NOT NULL DEFAULT 1 CHECK (start_batch_number BETWEEN 1 AND 12),
     end_batch_number INT NOT NULL DEFAULT 12 CHECK (end_batch_number BETWEEN 1 AND 12),
-    CONSTRAINT uq_student_class UNIQUE (student_id, class_id),
     CONSTRAINT chk_batch_range CHECK (end_batch_number >= start_batch_number)
 );
 
