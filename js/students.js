@@ -339,82 +339,125 @@ export async function renderStudentDetailView(container, studentId) {
   }
 }
 
-// Show Class Transfer & Enrollment Modal
+// Show Class Transfer & Enrollment Modal with intuitive Join vs Transfer modes
 function showTransferClassModal(student, existingEnrollments) {
   const activeEnrollments = existingEnrollments.filter(e => e.status === 'ACTIVE');
 
   api.getClasses().then(allClasses => {
-    const title = `Chuyển Lớp / Gia Nhập Lớp Mới cho ${student.full_name}`;
+    const title = `Gia Nhập Lớp Mới / Chuyển Lớp cho ${student.full_name}`;
 
     const bodyHtml = `
       <form id="form-transfer-modal">
-        <div style="background: #f8fafc; padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 13px; color: var(--text-muted);">
-          ℹ️ <strong>Quy tắc Chuyển Đợt</strong>: Hệ thống sẽ tự động lưu Đợt học kết thúc ở Lớp cũ và ghi nhận Đợt bắt đầu ở Lớp mới. Khoản nợ đợt cũ (nếu có) sẽ được bảo lưu nguyên vẹn.
+        <!-- Action Type Radio Selector -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: var(--radius-md); margin-bottom: 20px;">
+          <div style="font-weight: 800; color: #065f46; margin-bottom: 8px;">Vui lòng chọn loại thao tác:</div>
+          <div style="display: flex; gap: 20px; font-size: 14px; font-weight: 700;">
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="m_action_type" value="JOIN_NEW" checked> 🟢 Học Thêm Lớp Mới (Giữ nguyên các lớp cũ)
+            </label>
+            ${activeEnrollments.length > 0 ? `
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <input type="radio" name="m_action_type" value="TRANSFER"> 🔄 Chuyển Lớp (Rời lớp cũ sang lớp mới)
+              </label>
+            ` : ''}
+          </div>
         </div>
 
+        <!-- Section 1: Target New Class & Start Batch -->
         <div class="form-group">
-          <label class="form-label">Chọn Lớp Muốn Đăng Ký / Chuyển Đến (*)</label>
+          <label class="form-label">Chọn Lớp Mới (*)</label>
           <select id="m-target-class" class="form-control" required>
             <option value="">-- Chọn Lớp Học --</option>
-            ${allClasses.map(c => `<option value="${c.class_id}">${c.class_name} (${c.academic_year})</option>`).join('')}
+            ${allClasses.map(c => `<option value="${c.class_id}">${c.class_name} (Niên khóa ${c.academic_year})</option>`).join('')}
           </select>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
-            <label class="form-label">Gia Nhập Từ Đợt Mấy? (*)</label>
+            <label class="form-label">Bắt Đầu Học Lớp Mới Từ Đợt Mấy? (*)</label>
             <select id="m-start-batch" class="form-control" required>
               ${[1,2,3,4,5,6,7,8,9,10,11,12].map(b => `<option value="${b}">Đợt ${b}</option>`).join('')}
             </select>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Đợt Kết Thúc Dự Kiến</label>
+            <label class="form-label">Đợt Kết Thúc Dự Kiến Lớp Mới</label>
             <select id="m-end-batch" class="form-control">
               ${[12,11,10,9,8,7,6,5,4,3,2,1].map(b => `<option value="${b}">Đợt ${b}</option>`).join('')}
             </select>
           </div>
         </div>
 
-        ${activeEnrollments.length > 0 ? `
-          <div class="form-group" style="margin-top: 16px;">
-            <label class="form-label">Nếu đang học lớp khác, Đợt Kết Thúc Ở Lớp Cũ Là Đợt Mấy?</label>
-            <select id="m-old-end-batch" class="form-control">
-              ${[1,2,3,4,5,6,7,8,9,10,11,12].map(b => `<option value="${b}" ${b === 4 ? 'selected' : ''}>Chuyển khỏi lớp cũ ở Đợt ${b}</option>`).join('')}
+        <!-- Section 2: Transfer Out Details (Only shown if action_type is TRANSFER) -->
+        <div id="transfer-out-section" style="display: none; border-top: 1px dashed var(--border-color); padding-top: 16px; margin-top: 16px; background: #fff5f5; border-radius: var(--radius-md); padding: 16px;">
+          <h4 style="font-size: 14px; font-weight: 800; color: #991b1b; margin-bottom: 12px;">🔄 Thông Tin Rời Lớp Cũ:</h4>
+          
+          <div class="form-group">
+            <label class="form-label">Chọn Lớp Cũ Muốn Rời Đi (*)</label>
+            <select id="m-old-enrollment-id" class="form-control">
+              ${activeEnrollments.map(e => `
+                <option value="${e.enrollment_id}">Lớp: ${e.classes ? e.classes.class_name : 'Lớp cũ'} (Đang học từ Đợt ${e.start_batch_number || 1})</option>
+              `).join('')}
             </select>
           </div>
-        ` : ''}
+
+          <div class="form-group">
+            <label class="form-label">Đợt Kết Thúc Học Ở Lớp Cũ Là Đợt Mấy? (*)</label>
+            <select id="m-old-end-batch" class="form-control">
+              ${[1,2,3,4,5,6,7,8,9,10,11,12].map(b => `<option value="${b}" ${b === 4 ? 'selected' : ''}>Học xong Đợt ${b} thì rời lớp cũ</option>`).join('')}
+            </select>
+          </div>
+        </div>
       </form>
     `;
 
     const footerHtml = `
       <button class="btn btn-secondary" onclick="window.closeModal()">Hủy Bỏ</button>
-      <button class="btn btn-primary" id="btn-save-transfer">Xác Nhận Đăng Ký / Chuyển Lớp</button>
+      <button class="btn btn-primary" id="btn-save-transfer">Xác Nhận Thực Hiện</button>
     `;
 
     openModal(title, bodyHtml, footerHtml);
 
+    // Dynamic Display Switcher for Radio Buttons
+    const radios = document.querySelectorAll('input[name="m_action_type"]');
+    const transferSec = document.getElementById('transfer-out-section');
+
+    radios.forEach(r => {
+      r.onchange = () => {
+        if (r.value === 'TRANSFER') {
+          transferSec.style.display = 'block';
+        } else {
+          transferSec.style.display = 'none';
+        }
+      };
+    });
+
     document.getElementById('btn-save-transfer').onclick = async () => {
+      const actionType = document.querySelector('input[name="m_action_type"]:checked').value;
       const targetClassId = document.getElementById('m-target-class').value;
       const startBatch = parseInt(document.getElementById('m-start-batch').value, 10);
       const endBatch = parseInt(document.getElementById('m-end-batch').value, 10);
-      const oldEndBatch = document.getElementById('m-old-end-batch') ? parseInt(document.getElementById('m-old-end-batch').value, 10) : 12;
 
       if (!targetClassId) {
-        alert('Vui lòng chọn lớp học!');
+        alert('Vui lòng chọn lớp mới!');
         return;
       }
 
       try {
-        // If student is currently active in old classes, mark old active enrollments as TRANSFERRED with oldEndBatch
-        for (const oldEn of activeEnrollments) {
-          await api.updateEnrollment(oldEn.enrollment_id, {
-            status: 'TRANSFERRED',
-            end_batch_number: oldEndBatch
-          });
+        if (actionType === 'TRANSFER') {
+          const oldEnrollmentId = document.getElementById('m-old-enrollment-id').value;
+          const oldEndBatch = parseInt(document.getElementById('m-old-end-batch').value, 10);
+
+          if (oldEnrollmentId) {
+            // Update old enrollment status to TRANSFERRED and end_batch_number to oldEndBatch
+            await api.updateEnrollment(oldEnrollmentId, {
+              status: 'TRANSFERRED',
+              end_batch_number: oldEndBatch
+            });
+          }
         }
 
-        // Create new enrollment record
+        // Create new enrollment record for target class
         await api.createEnrollment({
           student_id: student.student_id,
           class_id: targetClassId,
@@ -423,12 +466,12 @@ function showTransferClassModal(student, existingEnrollments) {
           status: 'ACTIVE'
         });
 
-        showToast('Chuyển lớp / Gia nhập lớp mới thành công!');
+        showToast(actionType === 'TRANSFER' ? 'Chuyển lớp thành công!' : 'Thêm lớp mới thành công!');
         closeModal();
         renderStudentDetailView(document.getElementById('app-view'), student.student_id);
       } catch (err) {
-        console.error('Error transferring class:', err);
-        showToast('Lỗi chuyển lớp: ' + err.message, 'error');
+        console.error('Error in student enrollment modal:', err);
+        showToast('Lỗi thực hiện: ' + err.message, 'error');
       }
     };
   });
