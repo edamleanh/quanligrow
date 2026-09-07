@@ -109,17 +109,46 @@ async function openStudentDetailPage(studentId, updateHash = true) {
       </tr>
     `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa có lịch sử chuyển lớp.</td></tr>`;
 
-    // Tab 3: Receipts History
+    // Tab 3: Receipts History with exact Date/Time and Itemized Breakdown (Class, Subject, Batch, Fee)
     const tblReceipts = document.getElementById('tbl-page-student-receipts-body');
-    tblReceipts.innerHTML = receipts.length > 0 ? receipts.map(r => `
-      <tr>
-        <td><strong>${r.receipt_code}</strong></td>
-        <td>${new Date(r.created_at).toLocaleDateString('vi-VN')}</td>
-        <td>${r.receipt_type === 'IN_MAY' ? 'In Máy' : 'Nhập Tay'}</td>
-        <td><strong style="color: var(--primary);">${Number(r.total_amount).toLocaleString('vi-VN')} VNĐ</strong></td>
-        <td>${r.manual_receipt_code || ''}</td>
-      </tr>
-    `).join('') : `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Chưa đóng biên lai nào.</td></tr>`;
+    tblReceipts.innerHTML = receipts.length > 0 ? receipts.map(r => {
+      const d = new Date(r.created_at || r.receipt_date);
+      const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      const itemsHtml = (r.receipt_items && r.receipt_items.length > 0)
+        ? `<div style="font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 4px;">
+            ${r.receipt_items.map(item => {
+              const cName = item.classes?.class_name || 'Lớp';
+              const sName = item.classes?.subjects?.subject_name ? ` (${item.classes.subjects.subject_name})` : '';
+              const bName = item.batches?.batch_name || (`Đợt ${item.batches?.batch_number || ''}`);
+              const amt = Number(item.amount_paid).toLocaleString('vi-VN');
+              return `<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(5, 150, 105, 0.05); padding: 4px 8px; border-radius: 4px; border-left: 3px solid var(--primary);">
+                <span><i class="fa-solid fa-book-bookmark" style="color: var(--primary); font-size: 11px; margin-right: 4px;"></i><strong>${cName}</strong>${sName} - <strong>${bName}</strong></span>
+                <span style="font-weight: 700; color: var(--primary); white-space: nowrap;">${amt} VNĐ</span>
+              </div>`;
+            }).join('')}
+          </div>`
+        : `<span style="color: var(--text-muted); font-style: italic;">Không có chi tiết</span>`;
+
+      return `
+        <tr>
+          <td><strong style="color: var(--text-main); font-family: monospace;">${r.receipt_code}</strong></td>
+          <td>
+            <div style="font-weight: 600; color: var(--text-main);">${timeStr}</div>
+            <div style="font-size: 12px; color: var(--text-muted);">${dateStr}</div>
+          </td>
+          <td>
+            ${r.receipt_type === 'IN_MAY' 
+              ? '<span class="badge badge-active" style="background: rgba(5, 150, 105, 0.1); color: var(--primary);"><i class="fa-solid fa-print"></i> In Máy</span>' 
+              : '<span class="badge badge-warning"><i class="fa-solid fa-pen"></i> Nhập Tay</span>'}
+          </td>
+          <td style="min-width: 320px;">${itemsHtml}</td>
+          <td><strong style="color: var(--primary); font-size: 15px;">${Number(r.total_amount).toLocaleString('vi-VN')} VNĐ</strong></td>
+          <td>${r.manual_receipt_code ? `<span class="badge" style="background: var(--bg-body); border: 1px solid var(--border); font-family: monospace;">${r.manual_receipt_code}</span>` : '<span style="color: var(--text-muted);">-</span>'}</td>
+        </tr>
+      `;
+    }).join('') : `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Chưa đóng biên lai nào.</td></tr>`;
 
     // Navigate to Full Page Detail View
     navigateToView('student-detail', false);

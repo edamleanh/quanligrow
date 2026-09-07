@@ -132,10 +132,19 @@ Hệ thống phân chia 3 nhóm quyền chính:
   - `IN_MAY`: Biên lai lập trực tiếp trên web và in phiếu thu máy.
   - `NHAP_TAY`: Biên lai thu bằng cuống sổ tay từ trước, nhập bổ sung vào hệ thống để đồng bộ số liệu (`manual_receipt_code`).
 - **Thông tin Lưu trữ Biên lai (Receipt Audit Schema)**:
-  - **Thông tin chung (Header)**: Mã biên lai, Loại biên lai (`IN_MAY` | `NHAP_TAY`), Mã biên lai tay (nếu có), Ngày lập, Người lập (User/Thu ngân), Học sinh, Tổng tiền.
-  - **Chi tiết biên lai (Line Items)**: Mã Lớp, Mã Đợt, Số tiền thực thu của dòng, Ghi chú dòng.
+  - **Thông tin chung (Header)**: Mã biên lai, Loại biên lai (`IN_MAY` | `NHAP_TAY`), Mã biên lai tay (nếu có), Ngày & Giờ lập chính xác (`DD/MM/YYYY HH:mm:ss`), Người lập (User/Thu ngân), Học sinh, Tổng tiền.
+  - **Chi tiết biên lai (Line Items Breakdown)**: Lịch sử biên lai phải lưu trữ và hiển thị chi tiết từng dòng thu tiền: Lớp học & Môn học, Đợt học tương ứng (VD: *Đợt 1*), và số tiền đóng của từng môn/đợt cụ thể.
 
-### 3.2. Tra Cứu Công Nợ & Tình Trạng Đóng Phí (Debt Reporting)
+### 3.2. Hiển Thị Lịch Sử Biên Lai Thu Tiền (Receipt History Display)
+- **Xem Lịch sử Thu tiền tại Màn hình Chi tiết Học sinh**:
+  - Bảng Lịch sử Biên lai (`tbl-page-student-receipts`) hiển thị đầy đủ:
+    1. **Mã Biên lai**: Hiển thị mã duy nhất (`#REC-...`).
+    2. **Ngày & Giờ Lập**: Ngày giờ đóng tiền chính xác đến từng phút/giây (`DD/MM/YYYY HH:mm:ss`).
+    3. **Loại Thu**: Phân loại biên lai (`In máy` hoặc `Nhập tay`).
+    4. **Chi Tiết Mục Đóng**: Danh sách hiển thị rõ ràng: *Lớp - Môn - Đợt học: Số tiền đóng từng môn* (Ví dụ: `Lớp Anh 6 (Tiếng Anh) - Đợt 1: 350.000 VNĐ`).
+    5. **Tổng Tiền Thu**: Tổng cộng số tiền thực thu của toàn bộ biên lai.
+
+### 3.3. Tra Cứu Công Nợ & Tình Trạng Đóng Phí (Debt Reporting)
 - **Màn hình Tra cứu Công nợ theo Lớp & Đợt**:
   - Người dùng chọn `[Lớp học]` + `[Đợt học]`.
   - Hệ thống liệt kê toàn bộ học sinh đang ghi danh trong lớp đó kèm theo **Trạng thái đóng phí**:

@@ -107,10 +107,10 @@ const ApiService = {
       .eq('student_id', studentId)
       .order('transfer_date', { ascending: false });
 
-    // 4. Real Receipts
+    // 4. Real Receipts with itemized details
     const { data: receipts } = await dbClient
       .from('receipts')
-      .select('*')
+      .select('*, receipt_items(*, classes(class_name, subjects(subject_name)), batches(batch_number, batch_name))')
       .eq('student_id', studentId)
       .order('created_at', { ascending: false });
 
