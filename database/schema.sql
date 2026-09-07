@@ -356,26 +356,6 @@ CREATE POLICY "Public read/write access for receipts" ON receipts FOR ALL USING 
 CREATE POLICY "Public read/write access for receipt_items" ON receipt_items FOR ALL USING (true) WITH CHECK (true);
 
 -- =============================================================================
--- 6. INITIAL SEED DATA
+-- 6. PURE DDL SCHEMA COMPLETED (NO SEED DATA)
 -- =============================================================================
 
--- Seed Academic Years
-INSERT INTO academic_years (year_name, start_date, end_date, is_current) VALUES
-('2025-2026', '2025-09-01', '2026-05-31', true),
-('2026-2027', '2026-09-01', '2027-05-31', false)
-ON CONFLICT (year_name) DO NOTHING;
-
--- Seed Standard Subjects
-INSERT INTO subjects (subject_code, subject_name) VALUES
-('TOAN', 'Toán Học'),
-('LY', 'Vật Lý'),
-('HOA', 'Hóa Học'),
-('VAN', 'Ngữ Văn'),
-('ANH', 'Tiếng Anh'),
-('GVNN', 'Giáo Viên Nước Ngoài')
-ON CONFLICT (subject_code) DO NOTHING;
-
--- Seed Default Admin User (Password: admin123)
-INSERT INTO users (username, password_hash, full_name, role) VALUES
-('admin', '$2a$10$wE1VjXh7t...adminhash', 'Quản Trị Viên', 'ADMIN')
-ON CONFLICT (username) DO NOTHING;
