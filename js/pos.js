@@ -1,10 +1,11 @@
-// EduManager V2 - Module Thu Tiền POS (Phân nhóm rõ ràng theo từng Lớp/Môn Học)
+// EduManager V2 - Module Thu Tiền POS & Tra Cứu Công Nợ Theo Lớp (Chuẩn Requirements 3.1 & 3.2)
 
 let posSelectedStudent = null;
 let posSelectedBatchIds = new Set();
 let posBatchesMap = new Map();
+let posStudentClassesPaidCountsMap = new Map(); // Tracks how many batches paid per class for the selected student
 
-function initPosModule() {
+async function initPosModule() {
   const searchInput = document.getElementById('pos-student-search-input');
   if (searchInput) {
     searchInput.addEventListener('input', handlePosStudentSearch);
@@ -34,6 +35,128 @@ function initPosModule() {
   if (btnSubmit) {
     btnSubmit.addEventListener('click', handleSubmitPosReceipt);
   }
+
+  // Sub-tabs switching
+  const posTabsContainer = document.getElementById('pos-main-tabs');
+  if (posTabsContainer) {
+    posTabsContainer.addEventListener('click', (e) => {
+      const tabItem = e.target.closest('.tab-item');
+      if (!tabItem) return;
+
+      const targetId = tabItem.getAttribute('data-target');
+      posTabsContainer.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      tabItem.classList.add('active');
+
+      document.querySelectorAll('#view-pos > .tab-content').forEach(c => c.classList.remove('active'));
+      const activeContent = document.getElementById(targetId);
+      if (activeContent) activeContent.classList.add('active');
+
+      if (targetId === 'tab-pos-debt-report') {
+        loadDebtReportModule();
+      }
+    });
+  }
+
+  // Initialize Debt Report Select Listeners
+  const classSelect = document.getElementById('debt-report-class-select');
+  const batchSelect = document.getElementById('debt-report-batch-select');
+  const statusSelect = document.getElementById('debt-report-status-select');
+
+  if (classSelect) classSelect.addEventListener('change', renderDebtReportTable);
+  if (batchSelect) batchSelect.addEventListener('change', renderDebtReportTable);
+  if (statusSelect) statusSelect.addEventListener('change', renderDebtReportTable);
+}
+
+async function loadDebtReportModule() {
+  try {
+    const classes = await ApiService.getClasses();
+    const classSelect = document.getElementById('debt-report-class-select');
+    if (classSelect) {
+      const currentVal = classSelect.value;
+      classSelect.innerHTML = `<option value="">-- Tất Cả Lớp Học --</option>` +
+        classes.map(c => `<option value="${c.class_id}">${c.class_name} (${c.subject_name || ''})</option>`).join('');
+      classSelect.value = currentVal;
+    }
+    await renderDebtReportTable();
+  } catch (err) {
+    console.error('Error loading debt report module:', err);
+  }
+}
+
+async function renderDebtReportTable() {
+  const classId = document.getElementById('debt-report-class-select')?.value || '';
+  const batchNum = document.getElementById('debt-report-batch-select')?.value || '';
+  const status = document.getElementById('debt-report-status-select')?.value || '';
+
+  const tbody = document.getElementById('tbl-debt-report-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted);">Đang tải báo cáo công nợ...</td></tr>`;
+
+  try {
+    const reportData = await ApiService.getDebtReport(classId, batchNum, status);
+
+    // Update Stats
+    const totalCount = reportData.length;
+    const unpaidCount = reportData.filter(r => r.payment_status === 'UNPAID' || r.payment_status === 'PARTIAL').length;
+    const paidCount = reportData.filter(r => r.payment_status === 'PAID').length;
+    let totalRev = 0;
+    reportData.forEach(r => totalRev += Number(r.total_paid || 0));
+
+    document.getElementById('debt-stat-total').textContent = totalCount;
+    document.getElementById('debt-stat-unpaid').textContent = unpaidCount;
+    document.getElementById('debt-stat-paid').textContent = paidCount;
+    document.getElementById('debt-stat-revenue').textContent = `${totalRev.toLocaleString('vi-VN')} VNĐ`;
+
+    if (reportData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted);">Không tìm thấy dữ liệu công nợ phù hợp.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = reportData.map(r => {
+      const reqFee = Number(r.required_fee || 0);
+      const paid = Number(r.total_paid || 0);
+      const remaining = Math.max(0, reqFee - paid);
+
+      let statusBadge = '';
+      if (r.payment_status === 'PAID') {
+        statusBadge = '<span class="badge badge-active">🟢 Đã đóng đủ</span>';
+      } else if (r.payment_status === 'PARTIAL') {
+        statusBadge = '<span class="badge badge-transferred">🟡 Đóng thiếu</span>';
+      } else {
+        statusBadge = '<span class="badge badge-danger">🔴 Chưa đóng</span>';
+      }
+
+      return `
+        <tr>
+          <td><strong>${r.student_code || 'N/A'}</strong></td>
+          <td><strong style="color: var(--text-primary);">${r.student_name}</strong></td>
+          <td>${r.student_phone || 'N/A'}</td>
+          <td>${r.class_name}</td>
+          <td><span class="badge" style="background: #f1f5f9; color: #334155;">Đợt ${r.batch_number}</span></td>
+          <td><strong>${reqFee.toLocaleString('vi-VN')} đ</strong></td>
+          <td style="color: var(--primary); font-weight: 700;">${paid.toLocaleString('vi-VN')} đ</td>
+          <td style="color: ${remaining > 0 ? 'var(--danger-red)' : 'var(--text-muted)'}; font-weight: 700;">${remaining.toLocaleString('vi-VN')} đ</td>
+          <td>${statusBadge}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="quickPayStudentForPos('${r.student_id}')">
+              <i class="fa-solid fa-cash-register"></i> Thu Tiền POS
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--danger-red);">Lỗi tải báo cáo: ${err.message}</td></tr>`;
+  }
+}
+
+async function quickPayStudentForPos(studentId) {
+  // Switch to POS Payment Tab
+  const tabPaymentBtn = document.querySelector('#pos-main-tabs .tab-item[data-target="tab-pos-payment"]');
+  if (tabPaymentBtn) tabPaymentBtn.click();
+
+  await selectStudentForPos(studentId);
 }
 
 async function handlePosStudentSearch(e) {
@@ -94,6 +217,13 @@ async function selectStudentForPos(studentId) {
 
     posSelectedBatchIds.clear();
     posBatchesMap.clear();
+    posStudentClassesPaidCountsMap.clear();
+
+    // Track how many batches paid per class
+    (activeClassesGrouped || []).forEach(cls => {
+      const paidBatchesCount = cls.batches.filter(b => b.is_paid).length;
+      posStudentClassesPaidCountsMap.set(cls.class_id, paidBatchesCount);
+    });
 
     // 1. RENDER TRANSFERRED OLD CLASS DEBTS (RED WARNING BOXES) GROUPED BY OLD CLASS
     const oldDebtsBox = document.getElementById('pos-old-class-debts-container');
@@ -112,7 +242,7 @@ async function selectStudentForPos(studentId) {
                 <div class="batch-pill-item unpaid" id="pill-${b.id}" onclick="toggleBatchSelection('${b.id}')">
                   <div class="batch-pill-name" style="color: var(--danger-text);">${b.batch_name}</div>
                   <div class="batch-pill-fee">${Number(b.fee_amount).toLocaleString('vi-VN')} VNĐ</div>
-                  <div style="font-size: 10px; color: var(--danger-red); font-weight: 700; margin-top: 4px;">NỢ LỚP CỦA CHUYỂN LỚP</div>
+                  <div style="font-size: 10px; color: var(--danger-red); font-weight: 700; margin-top: 4px;">NỢ LỚP CHUYỂN</div>
                 </div>
               `;
             }).join('')}
@@ -179,10 +309,12 @@ function clearPosSelectedStudent() {
   posSelectedStudent = null;
   posSelectedBatchIds.clear();
   posBatchesMap.clear();
+  posStudentClassesPaidCountsMap.clear();
 
   document.getElementById('pos-selected-student-card').style.display = 'none';
   document.getElementById('pos-old-class-debts-container').style.display = 'none';
   document.getElementById('pos-current-class-debts-container').style.display = 'none';
+  document.getElementById('pos-first-time-warning-box').style.display = 'none';
   updatePosCheckoutSummary();
 }
 
@@ -201,23 +333,41 @@ function updatePosCheckoutSummary() {
   const selectedListEl = document.getElementById('pos-selected-batches-list');
   const totalAmountEl = document.getElementById('pos-total-amount');
   const btnSubmit = document.getElementById('btn-submit-pos-receipt');
+  const warningBox = document.getElementById('pos-first-time-warning-box');
 
   if (posSelectedBatchIds.size === 0) {
     selectedListEl.textContent = 'Chưa chọn đợt nào';
     totalAmountEl.textContent = '0 VNĐ';
     btnSubmit.disabled = true;
+    if (warningBox) warningBox.style.display = 'none';
     return;
   }
 
   let total = 0;
   const names = [];
+  let isFirstTimePaymentForAnyClass = false;
+
   posSelectedBatchIds.forEach(bId => {
     const b = posBatchesMap.get(bId);
     if (b) {
       total += Number(b.fee_amount || 350000);
       names.push(b.name);
+
+      // Check if student has paid 0 batches for this class
+      const previousPaidCount = posStudentClassesPaidCountsMap.get(b.class_id) || 0;
+      if (previousPaidCount === 0) {
+        isFirstTimePaymentForAnyClass = true;
+      }
     }
   });
+
+  if (warningBox) {
+    if (isFirstTimePaymentForAnyClass) {
+      warningBox.style.display = 'block';
+    } else {
+      warningBox.style.display = 'none';
+    }
+  }
 
   selectedListEl.innerHTML = names.map(n => `<div style="margin-bottom: 4px;">• <strong>${n}</strong></div>`).join('');
   totalAmountEl.textContent = `${total.toLocaleString('vi-VN')} VNĐ`;

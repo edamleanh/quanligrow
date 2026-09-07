@@ -89,6 +89,7 @@ function navigateToView(viewName) {
   if (viewName === 'students') loadStudentsModule();
   if (viewName === 'classes') loadClassesModule();
   if (viewName === 'teachers') loadTeachersModule();
+  if (viewName === 'pos') loadDebtReportModule();
   
   // Scroll window to top
   window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -50,7 +50,8 @@ DROP POLICY IF EXISTS "Allow All Public Access" ON academic_years;
 CREATE POLICY "Allow All Public Access" ON academic_years FOR ALL USING (true);
 
 -- 5. Recreate View: v_class_details
-CREATE OR REPLACE VIEW v_class_details AS
+DROP VIEW IF EXISTS v_class_details CASCADE;
+CREATE VIEW v_class_details AS
 SELECT 
     c.class_id,
     c.class_name,
@@ -68,7 +69,8 @@ LEFT JOIN enrollments e ON c.class_id = e.class_id AND e.status = 'ACTIVE'
 GROUP BY c.class_id, c.academic_year, s.subject_name, t.full_name;
 
 -- 6. Recreate View: v_debt_summary
-CREATE OR REPLACE VIEW v_debt_summary AS
+DROP VIEW IF EXISTS v_debt_summary CASCADE;
+CREATE VIEW v_debt_summary AS
 SELECT 
     b.batch_id,
     b.batch_name,
@@ -95,10 +97,11 @@ JOIN batches b ON b.class_id = c.class_id
 LEFT JOIN receipts r ON r.student_id = st.student_id
 LEFT JOIN receipt_items ri ON ri.receipt_id = r.receipt_id AND ri.class_id = c.class_id AND ri.batch_id = b.batch_id
 WHERE e.status IN ('ACTIVE', 'TRANSFERRED')
-GROUP BY b.batch_id, b.batch_name, b.batch_number, c.class_id, c.class_name, c.academic_year, st.student_id, st.student_code, st.full_name, st.phone, b.fee_rate, e.status;
+GROUP BY b.batch_id, b.batch_number, b.batch_name, c.class_id, c.class_name, c.academic_year, st.student_id, st.student_code, st.full_name, st.phone, b.fee_rate, e.status;
 
 -- 7. Recreate View: v_teacher_batch_payroll
-CREATE OR REPLACE VIEW v_teacher_batch_payroll AS
+DROP VIEW IF EXISTS v_teacher_batch_payroll CASCADE;
+CREATE VIEW v_teacher_batch_payroll AS
 SELECT 
     t.teacher_id,
     t.teacher_code,
@@ -118,3 +121,4 @@ JOIN classes c ON b.class_id = c.class_id
 LEFT JOIN teachers t ON COALESCE(b.teacher_id, c.teacher_id) = t.teacher_id
 LEFT JOIN receipt_items ri ON ri.batch_id = b.batch_id
 GROUP BY t.teacher_id, t.teacher_code, t.full_name, c.class_id, c.class_name, c.academic_year, b.batch_id, b.batch_number, b.batch_name, b.fee_rate, b.status;
+

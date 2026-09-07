@@ -426,7 +426,27 @@ const ApiService = {
     return data;
   },
 
-  // 5. POS API
+  // 5. POS & DEBT REPORT API
+  async getDebtReport(classId = '', batchNumber = '', statusFilter = '') {
+    let q = dbClient.from('v_debt_summary').select('*');
+    if (classId) {
+      q = q.eq('class_id', classId);
+    }
+    if (batchNumber) {
+      q = q.eq('batch_number', Number(batchNumber));
+    }
+    if (statusFilter) {
+      q = q.eq('payment_status', statusFilter);
+    }
+
+    const { data, error } = await q.order('student_code', { ascending: true });
+    if (error) {
+      console.error('getDebtReport error:', error);
+      return [];
+    }
+    return data || [];
+  },
+
   async getStudentDebtsAndBatches(studentId) {
     const { data: debtRows, error } = await dbClient
       .from('v_debt_summary')
