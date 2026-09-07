@@ -217,7 +217,6 @@ const ApiService = {
 
     const gradeNum = parseInt(gradeLevel.replace(/\D/g, '')) || 6;
 
-    // Create Class (PostgreSQL Trigger trg_classes_after_insert_create_batches AUTO creates 12 batches in DB!)
     const { data: newClass, error: cErr } = await dbClient
       .from('classes')
       .insert([{
@@ -243,7 +242,6 @@ const ApiService = {
       .single();
     if (cErr) throw cErr;
 
-    // Real Batches from database
     const { data: batches } = await dbClient
       .from('batches')
       .select(`
@@ -257,7 +255,6 @@ const ApiService = {
       .eq('class_id', classId)
       .order('batch_number', { ascending: true });
 
-    // Real Enrolled Roster from database
     const { data: roster } = await dbClient
       .from('enrollments')
       .select(`
@@ -311,7 +308,6 @@ const ApiService = {
     const { data, error } = await q;
     if (error) throw error;
 
-    // Count real active classes for each teacher directly from database
     const teachersWithCount = await Promise.all((data || []).map(async (t) => {
       const { count } = await dbClient
         .from('classes')
@@ -335,13 +331,11 @@ const ApiService = {
       .single();
     if (tErr) throw tErr;
 
-    // Real Assigned Classes
     const { data: classes } = await dbClient
       .from('classes')
       .select('*')
       .eq('teacher_id', teacherId);
 
-    // Real Teacher Batch Payroll View
     const { data: payroll } = await dbClient
       .from('v_teacher_batch_payroll')
       .select('*')
@@ -381,7 +375,7 @@ const ApiService = {
     return data;
   },
 
-  // 5. POS & OLD CLASS DEBT RECOVERY API (100% Real Query on v_debt_summary)
+  // 5. POS API: Grouping Batches by Class for Clear Multi-Class Display
   async getStudentDebtsAndBatches(studentId) {
     const { data: debtRows, error } = await dbClient
       .from('v_debt_summary')
@@ -391,52 +385,55 @@ const ApiService = {
 
     if (error) {
       console.error('getStudentDebtsAndBatches error:', error);
-      return { activeClass: null, currentBatches: [], oldClassDebts: [] };
+      return { activeClassesGrouped: [], oldClassesGrouped: [] };
     }
 
     const rows = debtRows || [];
 
-    // Separate ACTIVE class debts vs TRANSFERRED old class debts
-    const currentClassRows = rows.filter(r => r.enrollment_status === 'ACTIVE');
-    const transferredClassRows = rows.filter(r => r.enrollment_status === 'TRANSFERRED');
-
-    let activeClassInfo = null;
-    if (currentClassRows.length > 0) {
-      activeClassInfo = {
-        class_id: currentClassRows[0].class_id,
-        name: currentClassRows[0].class_name
-      };
-    }
-
-    const currentBatches = currentClassRows.map(r => ({
-      id: r.batch_id,
-      class_id: r.class_id,
-      batch_number: r.batch_number,
-      name: r.batch_name,
-      fee_amount: r.required_fee,
-      is_paid: r.payment_status === 'PAID',
-      class_name: r.class_name,
-      is_old_class: false
-    }));
-
-    // Filter ONLY UNPAID debts for transferred old classes
-    const oldClassDebts = transferredClassRows
-      .filter(r => r.payment_status !== 'PAID')
-      .map(r => ({
+    // Group rows by class_id
+    const classMap = new Map();
+    rows.forEach(r => {
+      if (!classMap.has(r.class_id)) {
+        classMap.set(r.class_id, {
+          class_id: r.class_id,
+          class_name: r.class_name,
+          enrollment_status: r.enrollment_status,
+          batches: []
+        });
+      }
+      classMap.get(r.class_id).batches.push({
         id: r.batch_id,
         class_id: r.class_id,
+        class_name: r.class_name,
         batch_number: r.batch_number,
         name: `${r.class_name} - ${r.batch_name}`,
+        batch_name: r.batch_name,
         fee_amount: r.required_fee,
-        is_paid: false,
-        class_name: r.class_name,
-        is_old_class: true
-      }));
+        is_paid: r.payment_status === 'PAID',
+        enrollment_status: r.enrollment_status
+      });
+    });
+
+    const activeClassesGrouped = [];
+    const oldClassesGrouped = [];
+
+    classMap.forEach((cls) => {
+      if (cls.enrollment_status === 'ACTIVE') {
+        activeClassesGrouped.push(cls);
+      } else if (cls.enrollment_status === 'TRANSFERRED') {
+        const unpaidBatches = cls.batches.filter(b => !b.is_paid);
+        if (unpaidBatches.length > 0) {
+          oldClassesGrouped.push({
+            ...cls,
+            batches: unpaidBatches
+          });
+        }
+      }
+    });
 
     return {
-      activeClass: activeClassInfo,
-      currentBatches,
-      oldClassDebts
+      activeClassesGrouped,
+      oldClassesGrouped
     };
   },
 
@@ -447,7 +444,6 @@ const ApiService = {
       code = `BL-${new Date().getFullYear()}-${randStr}`;
     }
 
-    // Insert Real Receipt Header
     const { data: receipt, error: rErr } = await dbClient
       .from('receipts')
       .insert([{
@@ -462,7 +458,6 @@ const ApiService = {
 
     if (rErr) throw rErr;
 
-    // Insert Real Receipt Items into receipt_items table
     for (const item of batchItemsList) {
       await dbClient
         .from('receipt_items')

@@ -1,4 +1,4 @@
-// EduManager V2 - Module Thu Tiền POS & Cảnh Báo "Nợ Lớp Cũ" Màu Đỏ
+// EduManager V2 - Module Thu Tiền POS (Phân nhóm rõ ràng theo từng Lớp/Môn Học)
 
 let posSelectedStudent = null;
 let posSelectedBatchIds = new Set();
@@ -56,14 +56,14 @@ async function handlePosStudentSearch(e) {
 
     resultsContainer.style.display = 'block';
     resultsContainer.innerHTML = students.map(s => {
-      const activeEnr = (s.enrollments || []).find(e => e.status === 'ACTIVE');
-      const className = activeEnr && activeEnr.classes ? activeEnr.classes.class_name : 'Chưa ghi danh';
+      const activeEnrs = (s.enrollments || []).filter(e => e.status === 'ACTIVE');
+      const classNames = activeEnrs.map(e => e.classes ? e.classes.class_name : '').filter(n => n).join(', ');
       return `
         <div style="padding: 10px 14px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
              onclick="selectStudentForPos('${s.student_id}')">
           <div>
             <strong style="color: var(--primary); font-size: 14px;">${s.full_name} (${s.student_code})</strong>
-            <div style="font-size: 12px; color: var(--text-secondary);">SĐT: ${s.phone || 'N/A'} | Lớp: ${className}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Khối ${s.grade || 'N/A'} | Các Lớp: ${classNames || 'Chưa có lớp'}</div>
           </div>
           <span class="badge badge-active">Chọn HS</span>
         </div>
@@ -85,68 +85,88 @@ async function selectStudentForPos(studentId) {
 
     // Show Selected Student Card
     document.getElementById('pos-student-name').textContent = `${posSelectedStudent.full_name} (${posSelectedStudent.student_code})`;
-    document.getElementById('pos-student-info').textContent = `Mã HS: ${posSelectedStudent.student_code} | SĐT: ${posSelectedStudent.phone || 'Chưa có'} | Ghi chú: ${posSelectedStudent.notes || 'Chưa có'}`;
+    document.getElementById('pos-student-info').textContent = `Mã HS: ${posSelectedStudent.student_code} | Khối: ${posSelectedStudent.grade || 'N/A'} | SĐT: ${posSelectedStudent.phone || 'Chưa có'}`;
     document.getElementById('pos-selected-student-card').style.display = 'block';
 
-    // Fetch Batches & Old Class Debts
+    // Fetch Batches Grouped By Class
     const debtsData = await ApiService.getStudentDebtsAndBatches(studentId);
-    const { activeClass, currentBatches, oldClassDebts } = debtsData;
+    const { activeClassesGrouped, oldClassesGrouped } = debtsData;
 
     posSelectedBatchIds.clear();
     posBatchesMap.clear();
 
-    // 1. RENDER OLD CLASS DEBTS RED WARNING BOX
+    // 1. RENDER TRANSFERRED OLD CLASS DEBTS (RED WARNING BOXES) GROUPED BY OLD CLASS
     const oldDebtsBox = document.getElementById('pos-old-class-debts-container');
-    const oldDebtsPills = document.getElementById('pos-old-class-batch-pills');
-
-    if (oldClassDebts && oldClassDebts.length > 0) {
+    if (oldClassesGrouped && oldClassesGrouped.length > 0) {
       oldDebtsBox.style.display = 'block';
-      oldDebtsPills.innerHTML = oldClassDebts.map(b => {
-        posBatchesMap.set(b.id, b);
-        return `
-          <div class="batch-pill-item unpaid" id="pill-${b.id}" onclick="toggleBatchSelection('${b.id}')">
-            <div class="batch-pill-name" style="color: var(--danger-text);"><i class="fa-solid fa-triangle-exclamation"></i> ${b.name}</div>
-            <div class="batch-pill-fee">${Number(b.fee_amount).toLocaleString('vi-VN')} VNĐ</div>
-            <div style="font-size: 10px; color: var(--danger-red); font-weight: 700; margin-top: 4px;">NỢ LỚP CỦA CHUYỂN LỚP</div>
+      oldDebtsBox.innerHTML = oldClassesGrouped.map(cls => `
+        <div style="margin-bottom: 12px;">
+          <div class="old-class-debt-header">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>NỢ LỚP CỦA CHUYỂN LỚP: ${cls.class_name}</span>
           </div>
-        `;
-      }).join('');
+          <div class="batch-pills-grid">
+            ${cls.batches.map(b => {
+              posBatchesMap.set(b.id, b);
+              return `
+                <div class="batch-pill-item unpaid" id="pill-${b.id}" onclick="toggleBatchSelection('${b.id}')">
+                  <div class="batch-pill-name" style="color: var(--danger-text);">${b.batch_name}</div>
+                  <div class="batch-pill-fee">${Number(b.fee_amount).toLocaleString('vi-VN')} VNĐ</div>
+                  <div style="font-size: 10px; color: var(--danger-red); font-weight: 700; margin-top: 4px;">NỢ LỚP CỦA CHUYỂN LỚP</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
     } else {
       oldDebtsBox.style.display = 'none';
-      oldDebtsPills.innerHTML = '';
+      oldDebtsBox.innerHTML = '';
     }
 
-    // 2. RENDER CURRENT CLASS BATCHES
+    // 2. RENDER ACTIVE CURRENT CLASSES GROUPED BY CLASS & SUBJECT
     const currentBox = document.getElementById('pos-current-class-debts-container');
-    const currentPills = document.getElementById('pos-current-class-batch-pills');
-    const currentTitle = document.getElementById('pos-current-class-title');
-
-    if (currentBatches.length > 0) {
+    if (activeClassesGrouped && activeClassesGrouped.length > 0) {
       currentBox.style.display = 'block';
-      currentTitle.innerHTML = `<i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> Lớp Hiện Tại: ${activeClass ? activeClass.name : 'Lớp Đang Học'}`;
-      currentPills.innerHTML = currentBatches.map(b => {
-        posBatchesMap.set(b.id, b);
-        if (b.is_paid) {
-          return `
-            <div class="batch-pill-item paid">
-              <div class="batch-pill-name">Đợt ${b.batch_number}</div>
-              <div class="batch-pill-fee">${Number(b.fee_amount).toLocaleString('vi-VN')} VNĐ</div>
-              <span class="badge badge-active" style="margin-top: 4px;">Đã đóng</span>
-            </div>
-          `;
-        } else {
-          return `
-            <div class="batch-pill-item unpaid" id="pill-${b.id}" onclick="toggleBatchSelection('${b.id}')">
-              <div class="batch-pill-name">Đợt ${b.batch_number}</div>
-              <div class="batch-pill-fee">${Number(b.fee_amount).toLocaleString('vi-VN')} VNĐ</div>
-              <span class="badge badge-danger" style="margin-top: 4px;">Chưa đóng</span>
-            </div>
-          `;
-        }
-      }).join('');
+      currentBox.style.background = 'transparent';
+      currentBox.style.border = 'none';
+      currentBox.style.padding = '0';
+
+      currentBox.innerHTML = activeClassesGrouped.map(cls => `
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <h3 class="card-title" style="color: var(--primary);">
+              <i class="fa-solid fa-chalkboard-user"></i> ${cls.class_name}
+            </h3>
+            <span class="badge badge-active">${cls.batches.filter(b => b.is_paid).length} / ${cls.batches.length} đợt đã đóng</span>
+          </div>
+          <div class="batch-pills-grid">
+            ${cls.batches.map(b => {
+              posBatchesMap.set(b.id, b);
+              if (b.is_paid) {
+                return `
+                  <div class="batch-pill-item paid">
+                    <div class="batch-pill-name">Đợt ${b.batch_number}</div>
+                    <div class="batch-pill-fee">${Number(b.fee_amount).toLocaleString('vi-VN')} VNĐ</div>
+                    <span class="badge badge-active" style="margin-top: 4px;">Đã đóng</span>
+                  </div>
+                `;
+              } else {
+                return `
+                  <div class="batch-pill-item unpaid" id="pill-${b.id}" onclick="toggleBatchSelection('${b.id}')">
+                    <div class="batch-pill-name">Đợt ${b.batch_number}</div>
+                    <div class="batch-pill-fee">${Number(b.fee_amount).toLocaleString('vi-VN')} VNĐ</div>
+                    <span class="badge badge-danger" style="margin-top: 4px;">Chưa đóng</span>
+                  </div>
+                `;
+              }
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
     } else {
       currentBox.style.display = 'none';
-      currentPills.innerHTML = '';
+      currentBox.innerHTML = '';
     }
 
     updatePosCheckoutSummary();
@@ -199,7 +219,7 @@ function updatePosCheckoutSummary() {
     }
   });
 
-  selectedListEl.innerHTML = names.map(n => `<div>• ${n}</div>`).join('');
+  selectedListEl.innerHTML = names.map(n => `<div style="margin-bottom: 4px;">• <strong>${n}</strong></div>`).join('');
   totalAmountEl.textContent = `${total.toLocaleString('vi-VN')} VNĐ`;
   btnSubmit.disabled = false;
 }
@@ -240,7 +260,7 @@ async function handleSubmitPosReceipt() {
     document.getElementById('print-cashier-name').textContent = currentRoleState.name;
 
     const itemsHtml = selectedItemsList.map(b => `
-      <div style="display: flex; justify-content: space-between;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
         <span>• ${b ? b.name : 'Học phí đợt'}</span>
         <strong>${Number(b ? b.fee_amount : 350000).toLocaleString('vi-VN')} VNĐ</strong>
       </div>
