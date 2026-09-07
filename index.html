@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduManager V2 - Trung Tâm Ngoại Ngữ Grow</title>
+  <link rel="stylesheet" href="index.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand-container">
+        <div class="brand-logo">🌱</div>
+        <div>
+          <h1 class="brand-title">EduManager V2</h1>
+          <div class="brand-subtitle">TRUNG TÂM NGOẠI NGỮ GROW</div>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <!-- Academic Year Selector -->
+        <div class="academic-year-selector">
+          <label for="select-academic-year">📅 Niên Khóa:</label>
+          <select id="select-academic-year">
+            <option value="2025-2026" selected>2025-2026</option>
+            <option value="2026-2027">2026-2027</option>
+            <option value="2024-2025">2024-2025</option>
+          </select>
+        </div>
+
+        <!-- Role Quick Switcher -->
+        <div class="role-switcher">
+          <button class="role-btn active" data-role="ADMIN">👑 Admin</button>
+          <button class="role-btn" data-role="CASHIER">💳 Thu Ngân</button>
+          <button class="role-btn" data-role="TEACHER">👨‍🏫 Giáo Viên</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- App Body (Sidebar + Main Content) -->
+    <div class="app-body">
+      <!-- Sidebar Navigation -->
+      <aside class="app-sidebar">
+        <nav class="nav-group">
+          <a href="#/dashboard" class="nav-item active" data-nav="dashboard">
+            <span class="nav-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="#/students" class="nav-item" data-nav="students">
+            <span class="nav-icon">👨‍🎓</span>
+            <span>Quản Lý Học Sinh</span>
+          </a>
+          <a href="#/classes" class="nav-item" data-nav="classes">
+            <span class="nav-icon">🏫</span>
+            <span>Quản Lý Lớp Học</span>
+          </a>
+          <a href="#/teachers" class="nav-item" data-nav="teachers">
+            <span class="nav-icon">👨‍🏫</span>
+            <span>Quản Lý Giáo Viên</span>
+          </a>
+          <a href="#/pos" class="nav-item" data-nav="pos">
+            <span class="nav-icon">💳</span>
+            <span>POS Thu Học Phí</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Main Dynamic Content Container -->
+      <main class="app-content">
+        <div id="app-view">
+          <!-- Views will be dynamically rendered here -->
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Dynamic Modal Backdrop & Container -->
+  <div id="modal-backdrop" class="modal-backdrop">
+    <div id="modal-card" class="modal-card">
+      <!-- Modal Content rendered dynamically -->
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+</body>
+</html>
