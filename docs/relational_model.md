@@ -26,7 +26,7 @@
    - `classes(<u>class_id</u>, class_name, academic_year -> academic_years(year_name), grade, subject_id -> subjects(subject_id), teacher_id -> teachers(teacher_id), default_fee_rate, is_active, created_at, updated_at)`
 
 7. **`enrollments`** (Ghi danh Học sinh vào Lớp học):
-   - `enrollments(<u>enrollment_id</u>, student_id -> students(student_id), class_id -> classes(class_id), enrolled_at, status)`
+   - `enrollments(<u>enrollment_id</u>, student_id -> students(student_id), class_id -> classes(class_id), enrolled_at, status, start_batch_number, end_batch_number)`
 
 8. **`batches`** (12 Đợt học theo Lớp - Weak Entity Relation):
    - `batches(<u>batch_id</u>, class_id -> classes(class_id), batch_number, batch_name, fee_rate, status, teacher_id -> teachers(teacher_id), created_at, updated_at)`
