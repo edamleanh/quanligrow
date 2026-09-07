@@ -68,7 +68,7 @@ CREATE TABLE students (
     student_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     student_code VARCHAR(20) UNIQUE NOT NULL,
     full_name VARCHAR(100) NOT NULL,
-    phone VARCHAR(20) NOT NULL CHECK (phone ~ '^[0-9]{10,11}$'),
+    phone VARCHAR(20) CHECK (phone IS NULL OR phone = '' OR phone ~ '^[0-9]{10,11}$'),
     grade INT NOT NULL CHECK (grade BETWEEN 1 AND 12),
     status VARCHAR(20) NOT NULL DEFAULT 'DANG_HOC' CHECK (status IN ('DANG_HOC', 'DA_NGHI', 'DA_TN')),
     notes TEXT,
