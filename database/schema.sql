@@ -9,25 +9,10 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Clean up legacy objects if re-running
+-- Clean up legacy objects safely if re-running (CASCADE handles dependent triggers and views)
 DROP VIEW IF EXISTS v_teacher_batch_payroll CASCADE;
 DROP VIEW IF EXISTS v_debt_summary CASCADE;
 DROP VIEW IF EXISTS v_class_details CASCADE;
-
-DROP TRIGGER IF EXISTS trg_classes_after_insert_batches ON classes;
-DROP TRIGGER IF EXISTS trg_receipt_items_total_insert ON receipt_items;
-DROP TRIGGER IF EXISTS trg_receipt_items_total_update ON receipt_items;
-DROP TRIGGER IF EXISTS trg_receipt_items_total_delete ON receipt_items;
-
-DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
-DROP TRIGGER IF EXISTS trg_teachers_updated_at ON teachers;
-DROP TRIGGER IF EXISTS trg_students_updated_at ON students;
-DROP TRIGGER IF EXISTS trg_classes_updated_at ON classes;
-DROP TRIGGER IF EXISTS trg_batches_updated_at ON batches;
-
-DROP FUNCTION IF EXISTS auto_create_class_batches CASCADE;
-DROP FUNCTION IF EXISTS calculate_receipt_total CASCADE;
-DROP FUNCTION IF EXISTS update_updated_at_column CASCADE;
 
 DROP TABLE IF EXISTS receipt_items CASCADE;
 DROP TABLE IF EXISTS receipts CASCADE;
@@ -39,6 +24,10 @@ DROP TABLE IF EXISTS students CASCADE;
 DROP TABLE IF EXISTS teachers CASCADE;
 DROP TABLE IF EXISTS subjects CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+
+DROP FUNCTION IF EXISTS auto_create_class_batches CASCADE;
+DROP FUNCTION IF EXISTS calculate_receipt_total CASCADE;
+DROP FUNCTION IF EXISTS update_updated_at_column CASCADE;
 
 -- =============================================================================
 -- 1. PHYSICAL TABLE DEFINITIONS
