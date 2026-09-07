@@ -5,9 +5,11 @@ let currentSelectedClassId = null;
 async function loadClassesModule() {
   const searchInput = document.getElementById('search-class-input');
   const query = searchInput ? searchInput.value.trim() : '';
+  const academicYearSelect = document.getElementById('filter-academic-year-select');
+  const academicYear = academicYearSelect ? academicYearSelect.value : '';
 
   try {
-    const classes = await ApiService.getClasses(query);
+    const classes = await ApiService.getClasses(query, academicYear);
     renderClassesTable(classes);
   } catch (err) {
     console.error('Error loading classes:', err);
@@ -20,13 +22,14 @@ function renderClassesTable(classes) {
   if (!tbody) return;
 
   if (classes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Không tìm thấy lớp học nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Không tìm thấy lớp học nào.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = classes.map(c => `
     <tr>
       <td><strong style="color: var(--primary); font-size: 15px;">${c.class_name}</strong></td>
+      <td><span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700;">${c.academic_year || '2025-2026'}</span></td>
       <td>${c.subject_name || 'Môn học'}</td>
       <td><span class="badge" style="background: #f1f5f9; color: #334155;">Khối ${c.grade}</span></td>
       <td>${c.teacher_name || 'Chưa phân công'}</td>
@@ -49,7 +52,7 @@ async function openClassDetailPage(classId) {
     const { classObj, batches, roster } = data;
 
     // Header Info
-    document.getElementById('page-class-title').innerHTML = `🏫 Lớp: ${classObj.class_name} (${classObj.subject_name}) - 12 Đợt Học`;
+    document.getElementById('page-class-title').innerHTML = `🏫 Lớp: ${classObj.class_name} (${classObj.subject_name}) - Năm Học ${classObj.academic_year || '2025-2026'}`;
     document.getElementById('page-class-meta').textContent = `Giáo viên phụ trách: ${classObj.teacher_name || 'Chưa phân công'} | Học phí gốc: ${Number(classObj.default_fee_rate).toLocaleString('vi-VN')} VNĐ/đợt | Sĩ số: ${roster.filter(r => r.status === 'ACTIVE').length} học sinh`;
 
     // Tab 1: Render 12 Batches with Editable Name and Fee Rate
@@ -148,6 +151,11 @@ function initClassesEvents() {
     searchInput.addEventListener('input', () => loadClassesModule());
   }
 
+  const academicYearSelect = document.getElementById('filter-academic-year-select');
+  if (academicYearSelect) {
+    academicYearSelect.addEventListener('change', () => loadClassesModule());
+  }
+
   // Auto adjust fee based on subject selection
   const subjectSelect = document.getElementById('class-subject-field');
   if (subjectSelect) {
@@ -186,6 +194,7 @@ function initClassesEvents() {
       const gradeLevel = document.getElementById('class-grade-field').value;
       const teacherId = document.getElementById('class-teacher-field').value;
       const feePerBatch = Number(document.getElementById('class-fee-field').value);
+      const academicYear = document.getElementById('class-academic-year-field')?.value || '2025-2026';
 
       if (!name || !teacherId || !feePerBatch) {
         alert('Vui lòng điền đầy đủ Tên lớp, Giáo viên và Học phí gốc!');
@@ -193,10 +202,10 @@ function initClassesEvents() {
       }
 
       try {
-        await ApiService.createClassWith12Batches(name, subject, gradeLevel, teacherId, feePerBatch);
+        await ApiService.createClassWith12Batches(name, subject, gradeLevel, teacherId, feePerBatch, academicYear);
         closeModal('modal-class-form');
         loadClassesModule();
-        alert(`Tạo lớp "${name}" và tự động sinh 12 Đợt học (Đợt 1 -> Đợt 12) thành công!`);
+        alert(`Tạo lớp "${name}" (${academicYear}) và tự động sinh 12 Đợt học (Đợt 1 -> Đợt 12) thành công!`);
       } catch (err) {
         alert('Lỗi tạo lớp học: ' + err.message);
       }

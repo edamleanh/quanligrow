@@ -62,10 +62,21 @@ CREATE TABLE IF NOT EXISTS students (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2.5 CLASSES TABLE
+-- 2.5 ACADEMIC YEARS TABLE
+CREATE TABLE IF NOT EXISTS academic_years (
+    academic_year_id SERIAL PRIMARY KEY,
+    year_name VARCHAR(20) UNIQUE NOT NULL,
+    start_date DATE,
+    end_date DATE,
+    is_current BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2.6 CLASSES TABLE
 CREATE TABLE IF NOT EXISTS classes (
     class_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     class_name VARCHAR(100) NOT NULL,
+    academic_year VARCHAR(20) NOT NULL DEFAULT '2025-2026' REFERENCES academic_years(year_name) ON DELETE RESTRICT,
     grade INT NOT NULL CONSTRAINT check_class_grade CHECK (grade BETWEEN 1 AND 12),
     subject_id INT NOT NULL REFERENCES subjects(subject_id) ON DELETE RESTRICT,
     teacher_id UUID REFERENCES teachers(teacher_id) ON DELETE RESTRICT,
@@ -232,6 +243,7 @@ CREATE OR REPLACE VIEW v_class_details AS
 SELECT 
     c.class_id,
     c.class_name,
+    c.academic_year,
     c.grade,
     s.subject_name,
     t.full_name AS teacher_name,
@@ -242,7 +254,7 @@ FROM classes c
 JOIN subjects s ON c.subject_id = s.subject_id
 LEFT JOIN teachers t ON c.teacher_id = t.teacher_id
 LEFT JOIN enrollments e ON c.class_id = e.class_id AND e.status = 'ACTIVE'
-GROUP BY c.class_id, s.subject_name, t.full_name;
+GROUP BY c.class_id, c.academic_year, s.subject_name, t.full_name;
 
 -- 5.2 View: Student Debt & Payment Status per Class & Batch (Supports Active & Transferred Classes)
 CREATE OR REPLACE VIEW v_debt_summary AS
@@ -252,6 +264,7 @@ SELECT
     b.batch_number,
     c.class_id,
     c.class_name,
+    c.academic_year,
     st.student_id,
     st.student_code,
     st.full_name AS student_name,
@@ -271,7 +284,7 @@ JOIN batches b ON b.class_id = c.class_id
 LEFT JOIN receipts r ON r.student_id = st.student_id
 LEFT JOIN receipt_items ri ON ri.receipt_id = r.receipt_id AND ri.class_id = c.class_id AND ri.batch_id = b.batch_id
 WHERE e.status IN ('ACTIVE', 'TRANSFERRED')
-GROUP BY b.batch_id, b.batch_name, b.batch_number, c.class_id, c.class_name, st.student_id, st.student_code, st.full_name, st.phone, b.fee_rate, e.status;
+GROUP BY b.batch_id, b.batch_name, b.batch_number, c.class_id, c.class_name, c.academic_year, st.student_id, st.student_code, st.full_name, st.phone, b.fee_rate, e.status;
 
 -- 5.3 View: Teacher Batch Payroll & Revenue Summary per Batch
 CREATE OR REPLACE VIEW v_teacher_batch_payroll AS
@@ -281,6 +294,7 @@ SELECT
     t.full_name AS teacher_name,
     c.class_id,
     c.class_name,
+    c.academic_year,
     b.batch_id,
     b.batch_number,
     b.batch_name,
@@ -292,7 +306,7 @@ FROM batches b
 JOIN classes c ON b.class_id = c.class_id
 LEFT JOIN teachers t ON COALESCE(b.teacher_id, c.teacher_id) = t.teacher_id
 LEFT JOIN receipt_items ri ON ri.batch_id = b.batch_id
-GROUP BY t.teacher_id, t.teacher_code, t.full_name, c.class_id, c.class_name, b.batch_id, b.batch_number, b.batch_name, b.fee_rate, b.status;
+GROUP BY t.teacher_id, t.teacher_code, t.full_name, c.class_id, c.class_name, c.academic_year, b.batch_id, b.batch_number, b.batch_name, b.fee_rate, b.status;
 
 -- -----------------------------------------------------------------------------
 -- 6. SUPABASE ROW LEVEL SECURITY (RLS POLICIES)
@@ -301,6 +315,7 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE teachers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE academic_years ENABLE ROW LEVEL SECURITY;
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE batches ENABLE ROW LEVEL SECURITY;
@@ -314,6 +329,7 @@ CREATE POLICY "Allow All Public Access" ON users FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON subjects FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON teachers FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON students FOR ALL USING (true);
+CREATE POLICY "Allow All Public Access" ON academic_years FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON classes FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON enrollments FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON batches FOR ALL USING (true);

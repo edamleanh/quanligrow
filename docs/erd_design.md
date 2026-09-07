@@ -49,13 +49,24 @@ Dựa trên tài liệu yêu cầu nghiệp vụ [requirements.md](file:///c:/Us
 - **Thuộc tính**:
   - `<u>class_id</u>` (UUID): Khóa chính.
   - `class_name` (VARCHAR): Tên lớp học (vd: `Lớp 6A - Toán`, `Lớp 6A - Văn`).
+  - `academic_year` (VARCHAR): Niên khóa / Năm học (Khóa ngoại trỏ đến `ACADEMIC_YEARS(year_name)`, vd: `2025-2026`).
   - `grade` (INT): Khối lớp (1 - 12).
   - `subject_id` (INT): Khóa ngoại trỏ đến `SUBJECTS`.
   - `teacher_id` (UUID): Khóa ngoại trỏ đến `TEACHERS`.
   - `default_fee_rate` (NUMERIC): Mức học phí gốc cho 1 đợt học.
   - `is_active` (BOOLEAN): Trạng thái lớp (Mở/Khóa).
 
-### 1.6. Thực thể `ENROLLMENTS` (Danh sách Ghi danh Lớp học)
+### 1.6. Thực thể `ACADEMIC_YEARS` (Năm học / Niên khóa)
+- **Loại thực thể**: Thực thể mạnh (Strong Entity).
+- **Thuộc tính**:
+  - `<u>academic_year_id</u>` (SERIAL/INT): Khóa chính.
+  - `year_name` (VARCHAR): Tên năm học (Duy nhất - UNIQUE, vd: `2024-2025`, `2025-2026`, `2026-2027`).
+  - `start_date` (DATE): Ngày bắt đầu năm học.
+  - `end_date` (DATE): Ngày kết thúc năm học.
+  - `is_current` (BOOLEAN): Đang là năm học hiện tại hoạt động.
+  - `created_at` (TIMESTAMP): Thời gian tạo bản ghi.
+
+### 1.7. Thực thể `ENROLLMENTS` (Danh sách Ghi danh Lớp học)
 - **Loại thực thể**: Thực thể trung gian (Junction Entity cho mối quan hệ N-M giữa `STUDENTS` và `CLASSES`).
 - **Thuộc tính**:
   - `<u>enrollment_id</u>` (UUID): Khóa chính.
@@ -128,6 +139,7 @@ erDiagram
     SUBJECTS ||--o{ TEACHERS : "chuyên môn (specializes in)"
     SUBJECTS ||--o{ CLASSES : "môn học (belongs to subject)"
     TEACHERS ||--o{ CLASSES : "giảng dạy (teaches)"
+    ACADEMIC_YEARS ||--o{ CLASSES : "áp dụng cho (applies to)"
     
     STUDENTS ||--o{ ENROLLMENTS : "đăng ký (enrolls in)"
     CLASSES ||--o{ ENROLLMENTS : "chứa (contains)"
@@ -138,6 +150,12 @@ erDiagram
     RECEIPTS ||--|{ RECEIPT_ITEMS : "bao gồm (contains line items)"
     CLASSES ||--o{ RECEIPT_ITEMS : "được đóng phí cho (paid for class)"
     BATCHES ||--o{ RECEIPT_ITEMS : "được đóng phí cho đợt (paid for batch)"
+
+    ACADEMIC_YEARS {
+        int academic_year_id PK
+        string year_name UK "2025-2026"
+        boolean is_current
+    }
 
     USERS {
         uuid user_id PK

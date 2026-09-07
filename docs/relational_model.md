@@ -38,10 +38,18 @@
   - `grade`: CHECK (`grade BETWEEN 1 AND 12`).
   - `status`: CHECK (`status IN ('DANG_HOC', 'DA_NGHI', 'DA_TN')`).
 
-### 5. `classes` (Danh mục Lớp học)
-- **Schema**: `classes(<u>class_id</u>, class_name, grade, subject_id, teacher_id, default_fee_rate, is_active, created_at)`
+### 5. `academic_years` (Danh mục Năm học / Niên khóa)
+- **Schema**: `academic_years(<u>academic_year_id</u>, year_name, start_date, end_date, is_current, created_at)`
+- **Khoản ràng buộc**:
+  - `academic_year_id`: Primary Key (SERIAL/INT).
+  - `year_name`: Unique, NOT NULL (vd: `2024-2025`, `2025-2026`, `2026-2027`).
+  - `is_current`: BOOLEAN DEFAULT false.
+
+### 6. `classes` (Danh mục Lớp học)
+- **Schema**: `classes(<u>class_id</u>, class_name, academic_year, grade, subject_id, teacher_id, default_fee_rate, is_active, created_at)`
 - **Khoản ràng buộc**:
   - `class_id`: Primary Key (UUID).
+  - `academic_year`: Foreign Key $\to$ `academic_years(year_name)` ON DELETE RESTRICT (Mặc định: `'2025-2026'`).
   - `grade`: CHECK (`grade BETWEEN 1 AND 12`).
   - `subject_id`: Foreign Key $\to$ `subjects(subject_id)` ON DELETE RESTRICT.
   - `teacher_id`: Foreign Key $\to$ `teachers(teacher_id)` ON DELETE RESTRICT.

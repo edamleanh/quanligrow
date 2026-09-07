@@ -196,10 +196,37 @@ const ApiService = {
   },
 
   // 3. CLASSES & BATCHES API
-  async getClasses(query = '') {
+  async getAcademicYears() {
+    try {
+      const { data, error } = await dbClient
+        .from('academic_years')
+        .select('*')
+        .order('year_name', { ascending: false });
+
+      if (error || !data || data.length === 0) {
+        return [
+          { academic_year_id: 1, year_name: '2025-2026', is_current: true },
+          { academic_year_id: 2, year_name: '2026-2027', is_current: false },
+          { academic_year_id: 3, year_name: '2024-2025', is_current: false }
+        ];
+      }
+      return data;
+    } catch (err) {
+      return [
+        { academic_year_id: 1, year_name: '2025-2026', is_current: true },
+        { academic_year_id: 2, year_name: '2026-2027', is_current: false },
+        { academic_year_id: 3, year_name: '2024-2025', is_current: false }
+      ];
+    }
+  },
+
+  async getClasses(query = '', academicYear = '') {
     let q = dbClient.from('v_class_details').select('*');
     if (query) {
       q = q.or(`class_name.ilike.%${query}%,subject_name.ilike.%${query}%,teacher_name.ilike.%${query}%`);
+    }
+    if (academicYear) {
+      q = q.eq('academic_year', academicYear);
     }
 
     const { data, error } = await q;
@@ -207,7 +234,7 @@ const ApiService = {
     return data || [];
   },
 
-  async createClassWith12Batches(name, subjectName, gradeLevel, teacherId, feePerBatch) {
+  async createClassWith12Batches(name, subjectName, gradeLevel, teacherId, feePerBatch, academicYear = '2025-2026') {
     const { data: subjects } = await dbClient.from('subjects').select('subject_id, subject_name');
     let subjectId = 1;
     if (subjects && subjects.length > 0) {
@@ -217,20 +244,33 @@ const ApiService = {
 
     const gradeNum = parseInt(gradeLevel.replace(/\D/g, '')) || 6;
 
+    const classPayload = {
+      class_name: name,
+      grade: gradeNum,
+      subject_id: subjectId,
+      teacher_id: teacherId,
+      default_fee_rate: feePerBatch,
+      academic_year: academicYear,
+      is_active: true
+    };
+
     const { data: newClass, error: cErr } = await dbClient
       .from('classes')
-      .insert([{
-        class_name: name,
-        grade: gradeNum,
-        subject_id: subjectId,
-        teacher_id: teacherId,
-        default_fee_rate: feePerBatch,
-        is_active: true
-      }])
+      .insert([classPayload])
       .select()
       .single();
 
-    if (cErr) throw cErr;
+    if (cErr) {
+      // Retry without academic_year if DB schema cache has not reloaded
+      delete classPayload.academic_year;
+      const { data: retryClass, error: retryErr } = await dbClient
+        .from('classes')
+        .insert([classPayload])
+        .select()
+        .single();
+      if (retryErr) throw retryErr;
+      return retryClass;
+    }
     return newClass;
   },
 

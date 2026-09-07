@@ -274,11 +274,17 @@
 
         <!-- 3. CLASSES VIEW (LIST) -->
         <section id="view-classes" class="view-section">
-          <div class="toolbar">
-            <div class="search-input-group">
+          <div class="toolbar" style="display: flex; gap: 12px; align-items: center;">
+            <div class="search-input-group" style="flex: 1;">
               <i class="fa-solid fa-magnifying-glass"></i>
               <input type="text" id="search-class-input" class="input-control" placeholder="Tìm theo Tên Lớp, Giáo Viên...">
             </div>
+            <select id="filter-academic-year-select" class="form-control-simple" style="max-width: 190px; font-weight: 600;">
+              <option value="">Tất Cả Năm Học</option>
+              <option value="2025-2026" selected>Năm Học 2025-2026</option>
+              <option value="2026-2027">Năm Học 2026-2027</option>
+              <option value="2024-2025">Năm Học 2024-2025</option>
+            </select>
             <button class="btn btn-primary" id="btn-open-create-class">
               <i class="fa-solid fa-plus-circle"></i> Tạo Lớp Học Mới (Tự động 12 Đợt)
             </button>
@@ -289,6 +295,7 @@
               <thead>
                 <tr>
                   <th>Tên Lớp Học</th>
+                  <th>Năm Học</th>
                   <th>Môn Học</th>
                   <th>Khối</th>
                   <th>Giáo Viên Phụ Trách</th>
@@ -298,7 +305,7 @@
                 </tr>
               </thead>
               <tbody id="tbl-classes-body">
-                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
               </tbody>
             </table>
           </div>
@@ -586,9 +593,19 @@
       <div class="modal-body">
         <form id="form-class">
           <input type="hidden" id="class-id-field">
-          <div class="form-group">
-            <label class="form-label">Tên Lớp Học (*)</label>
-            <input type="text" id="class-name-field" class="form-control-simple" required placeholder="Ví dụ: 6A - Toán Nâng Cao">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tên Lớp Học (*)</label>
+              <input type="text" id="class-name-field" class="form-control-simple" required placeholder="Ví dụ: 6A - Toán Nâng Cao">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Năm Học (*)</label>
+              <select id="class-academic-year-field" class="form-control-simple" style="font-weight: 600;">
+                <option value="2025-2026">2025 - 2026</option>
+                <option value="2026-2027">2026 - 2027</option>
+                <option value="2024-2025">2024 - 2025</option>
+              </select>
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
