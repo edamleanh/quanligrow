@@ -76,6 +76,28 @@ Hệ thống phân chia 3 nhóm quyền chính:
     - Khi kết thúc 1 đợt học, người dùng (Admin/Thu ngân) sẽ **cập nhật bằng tay** đợt cũ sang `COMPLETED` và đợt tiếp theo sang `DANG_HOC`.
   - **Học phí từng đợt**: Mặc định kế thừa `default_fee_rate` của lớp, cho phép chỉnh sửa tiền đóng riêng cho từng đợt nếu cần.
 
+### 2.5. Nghiệp vụ Chuyển Lớp giữa chừng & Theo dõi Công nợ Nối tiếp (Student Class Transfers)
+- **Chuyển lớp học giữa chừng**:
+  - Học sinh được phép xin chuyển từ lớp cũ sang lớp mới trong cùng khối/môn hoặc khác khối (Ví dụ: Chuyển từ *Lớp 6A - Toán* sang *Lớp 6B - Toán* từ Đợt 3).
+- **Lưu trữ Lịch sử Chuyển lớp (`class_transfers`)**:
+  - Bảng `class_transfers` lưu trữ thông tin: Học sinh (`student_id`), Lớp đi (`from_class_id`), Lớp đến (`to_class_id`), Ngày chuyển (`transfer_date`), Đợt bắt đầu ở lớp mới (`effective_batch_number`), Lý do (`reason`), Người thực hiện (`created_by_user_id`).
+- **Quy tắc Xử lý Công Nợ & Thu Tiền khi Chuyển Lớp**:
+  - Trạng thái ghi danh (`enrollments.status`) ở lớp cũ được đổi sang `'TRANSFERRED'`.
+  - Nếu học sinh **chưa đóng tiền các đợt ở lớp cũ** (Ví dụ: Nợ Đợt 1, Đợt 2 của lớp cũ *6A-Toán*):
+    - Dữ liệu nợ phí đợt cũ của lớp cũ **được giữ nguyên** và tiếp tục tính vào tổng nợ của học sinh đó.
+    - Khi thu tiền, hệ thống truy vấn và hiển thị **cả danh sách nợ lớp cũ lẫn nợ lớp mới** của học sinh.
+    - Biên lai thu tiền cho phép thu gộp **nợ lớp cũ + học phí lớp mới** trên 1 biên lai duy nhất (`receipt_items` ghi nhận chính xác `class_id` và `batch_id`).
+
+### 2.6. Nghiệp vụ Phân công Giáo viên theo Đợt & Quyết toán Lương (`Teacher Assignment per Batch`)
+- **Thay đổi Giáo viên phụ trách giữa các Đợt học**:
+  - Trong quá trình học, một lớp học có thể thay đổi giáo viên giữa các đợt (Ví dụ: *Lớp 6A-Toán* có Đợt 1..3 do Thầy Trần Văn Anh dạy, Đợt 4..12 do Cô Nguyễn Thị Hoa dạy).
+- **Lưu trữ Giáo viên theo Đợt (`batches.teacher_id` & `class_teacher_assignments`)**:
+  - Bảng `batches` bổ sung trường `teacher_id` lưu giáo viên phụ trách riêng của đợt đó (Mặc định lấy theo `classes.teacher_id`).
+  - Bảng `class_teacher_assignments` lưu vết lịch sử mọi lần phân công/thay đổi giáo viên theo đợt học (`assignment_id`, `class_id`, `batch_id`, `teacher_id`, `assigned_at`).
+- **Thanh toán & Quyết toán Lương Giáo viên**:
+  - CSDL cung cấp báo cáo `v_teacher_batch_payroll` tổng hợp tiền học phí thu được theo từng Đợt học của từng Giáo viên phụ trách.
+  - Đảm bảo tiền công/thù lao được quyết toán đúng cho giáo viên thực dạy đợt đó, không bị nhầm lẫn khi lớp thay đổi giáo viên giữa chừng.
+
 ---
 
 ## 3. LOGIC THU HỌC PHÍ, BIÊN LAI & CÔNG NỢ (PAYMENTS & DEBT LOGIC)

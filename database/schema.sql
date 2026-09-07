@@ -11,7 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- -----------------------------------------------------------------------------
 CREATE TYPE user_role AS ENUM ('ADMIN', 'CASHIER', 'TEACHER');
 CREATE TYPE student_status AS ENUM ('DANG_HOC', 'DA_NGHI', 'DA_TN');
-CREATE TYPE enrollment_status AS ENUM ('ACTIVE', 'WITHDRAWN');
+CREATE TYPE enrollment_status AS ENUM ('ACTIVE', 'WITHDRAWN', 'TRANSFERRED');
 CREATE TYPE receipt_type_enum AS ENUM ('IN_MAY', 'NHAP_TAY');
 CREATE TYPE batch_status AS ENUM ('DANG_HOC', 'UPCOMING', 'COMPLETED');
 
@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS batches (
     batch_name VARCHAR(100) NOT NULL,
     fee_rate NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CONSTRAINT check_batch_fee CHECK (fee_rate >= 0),
     status batch_status NOT NULL DEFAULT 'UPCOMING',
+    teacher_id UUID REFERENCES teachers(teacher_id) ON DELETE RESTRICT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_class_batch_number UNIQUE (class_id, batch_number)
@@ -120,6 +121,30 @@ CREATE TABLE IF NOT EXISTS receipt_items (
     amount_paid NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CONSTRAINT check_amount_paid CHECK (amount_paid >= 0),
     item_note TEXT,
     CONSTRAINT unique_receipt_class_batch UNIQUE (receipt_id, class_id, batch_id)
+);
+
+-- 2.10 CLASS_TRANSFERS TABLE (Student Transfer Audit & History)
+CREATE TABLE IF NOT EXISTS class_transfers (
+    transfer_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id UUID NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+    from_class_id UUID NOT NULL REFERENCES classes(class_id) ON DELETE RESTRICT,
+    to_class_id UUID NOT NULL REFERENCES classes(class_id) ON DELETE RESTRICT,
+    transfer_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    effective_batch_number INT NOT NULL CONSTRAINT check_transfer_batch CHECK (effective_batch_number BETWEEN 1 AND 12),
+    reason TEXT,
+    created_by_user_id UUID REFERENCES users(user_id) ON DELETE RESTRICT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2.11 CLASS_TEACHER_ASSIGNMENTS TABLE (Teacher Assignment History per Batch)
+CREATE TABLE IF NOT EXISTS class_teacher_assignments (
+    assignment_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    class_id UUID NOT NULL REFERENCES classes(class_id) ON DELETE CASCADE,
+    batch_id UUID NOT NULL REFERENCES batches(batch_id) ON DELETE CASCADE,
+    teacher_id UUID NOT NULL REFERENCES teachers(teacher_id) ON DELETE RESTRICT,
+    assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    note TEXT,
+    CONSTRAINT unique_batch_teacher UNIQUE (batch_id)
 );
 
 -- -----------------------------------------------------------------------------
@@ -219,11 +244,12 @@ LEFT JOIN teachers t ON c.teacher_id = t.teacher_id
 LEFT JOIN enrollments e ON c.class_id = e.class_id AND e.status = 'ACTIVE'
 GROUP BY c.class_id, s.subject_name, t.full_name;
 
--- 5.2 View: Student Debt & Payment Status per Class & Batch
+-- 5.2 View: Student Debt & Payment Status per Class & Batch (Supports Active & Transferred Classes)
 CREATE OR REPLACE VIEW v_debt_summary AS
 SELECT 
     b.batch_id,
     b.batch_name,
+    b.batch_number,
     c.class_id,
     c.class_name,
     st.student_id,
@@ -236,15 +262,37 @@ SELECT
         WHEN COALESCE(SUM(ri.amount_paid), 0) >= b.fee_rate THEN 'PAID'
         WHEN COALESCE(SUM(ri.amount_paid), 0) > 0 THEN 'PARTIAL'
         ELSE 'UNPAID'
-    END AS payment_status
+    END AS payment_status,
+    e.status AS enrollment_status
 FROM enrollments e
 JOIN students st ON e.student_id = st.student_id
 JOIN classes c ON e.class_id = c.class_id
 JOIN batches b ON b.class_id = c.class_id
 LEFT JOIN receipts r ON r.student_id = st.student_id
 LEFT JOIN receipt_items ri ON ri.receipt_id = r.receipt_id AND ri.class_id = c.class_id AND ri.batch_id = b.batch_id
-WHERE e.status = 'ACTIVE'
-GROUP BY b.batch_id, b.batch_name, c.class_id, c.class_name, st.student_id, st.student_code, st.full_name, st.phone, b.fee_rate;
+WHERE e.status IN ('ACTIVE', 'TRANSFERRED')
+GROUP BY b.batch_id, b.batch_name, b.batch_number, c.class_id, c.class_name, st.student_id, st.student_code, st.full_name, st.phone, b.fee_rate, e.status;
+
+-- 5.3 View: Teacher Batch Payroll & Revenue Summary per Batch
+CREATE OR REPLACE VIEW v_teacher_batch_payroll AS
+SELECT 
+    t.teacher_id,
+    t.teacher_code,
+    t.full_name AS teacher_name,
+    c.class_id,
+    c.class_name,
+    b.batch_id,
+    b.batch_number,
+    b.batch_name,
+    b.fee_rate AS batch_fee_rate,
+    b.status AS batch_status,
+    COALESCE(SUM(ri.amount_paid), 0) AS total_revenue_collected,
+    COUNT(DISTINCT ri.receipt_id) AS total_receipts_count
+FROM batches b
+JOIN classes c ON b.class_id = c.class_id
+LEFT JOIN teachers t ON COALESCE(b.teacher_id, c.teacher_id) = t.teacher_id
+LEFT JOIN receipt_items ri ON ri.batch_id = b.batch_id
+GROUP BY t.teacher_id, t.teacher_code, t.full_name, c.class_id, c.class_name, b.batch_id, b.batch_number, b.batch_name, b.fee_rate, b.status;
 
 -- -----------------------------------------------------------------------------
 -- 6. SUPABASE ROW LEVEL SECURITY (RLS POLICIES)
@@ -258,8 +306,10 @@ ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE batches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE receipt_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE class_transfers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE class_teacher_assignments ENABLE ROW LEVEL SECURITY;
 
--- Allow public / anon full CRUD for active web app integration
+-- Allow public / anon full CRUD for active integration
 CREATE POLICY "Allow All Public Access" ON users FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON subjects FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON teachers FOR ALL USING (true);
@@ -269,3 +319,5 @@ CREATE POLICY "Allow All Public Access" ON enrollments FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON batches FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON receipts FOR ALL USING (true);
 CREATE POLICY "Allow All Public Access" ON receipt_items FOR ALL USING (true);
+CREATE POLICY "Allow All Public Access" ON class_transfers FOR ALL USING (true);
+CREATE POLICY "Allow All Public Access" ON class_teacher_assignments FOR ALL USING (true);

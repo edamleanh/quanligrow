@@ -96,6 +96,28 @@ Dựa trên tài liệu yêu cầu nghiệp vụ [requirements.md](file:///c:/Us
   - `amount_paid` (NUMERIC): Số tiền thực thu của mục này.
   - `item_note` (VARCHAR): Ghi chú dòng.
 
+### 1.10. Thực thể `CLASS_TRANSFERS` (Lịch sử Chuyển Lớp)
+- **Loại thực thể**: Thực thể mạnh (Strong Entity).
+- **Thuộc tính**:
+  - `<u>transfer_id</u>` (UUID): Khóa chính.
+  - `student_id` (UUID): Khóa ngoại trỏ đến `STUDENTS`.
+  - `from_class_id` (UUID): Khóa ngoại trỏ đến `CLASSES` (Lớp cũ).
+  - `to_class_id` (UUID): Khóa ngoại trỏ đến `CLASSES` (Lớp mới).
+  - `transfer_date` (TIMESTAMP): Ngày thực hiện chuyển lớp.
+  - `effective_batch_number` (INT): Số thứ tự đợt học bắt đầu áp dụng ở lớp mới.
+  - `reason` (TEXT): Lý do chuyển lớp.
+  - `created_by_user_id` (UUID): Khóa ngoại trỏ đến `USERS`.
+
+### 1.11. Thực thể `CLASS_TEACHER_ASSIGNMENTS` (Phân công Giáo viên theo Đợt)
+- **Loại thực thể**: Thực thể mạnh (Strong Entity).
+- **Thuộc tính**:
+  - `<u>assignment_id</u>` (UUID): Khóa chính.
+  - `class_id` (UUID): Khóa ngoại trỏ đến `CLASSES`.
+  - `batch_id` (UUID): Khóa ngoại trỏ đến `BATCHES`.
+  - `teacher_id` (UUID): Khóa ngoại trỏ đến `TEACHERS`.
+  - `assigned_at` (TIMESTAMP): Ngày phân công.
+  - `note` (TEXT): Ghi chú phân công.
+
 ---
 
 ## 2. SƠ ĐỒ ERD (ENTITY-RELATIONSHIP DIAGRAM)

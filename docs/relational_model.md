@@ -85,6 +85,25 @@
   - `amount_paid`: CHECK (`amount_paid >= 0`).
   - **Unique Constraint**: `UNIQUE(receipt_id, class_id, batch_id)`.
 
+### 10. `class_transfers` (Lịch sử Chuyển Lớp)
+- **Schema**: `class_transfers(<u>transfer_id</u>, student_id, from_class_id, to_class_id, transfer_date, effective_batch_number, reason, created_by_user_id)`
+- **Khoản ràng buộc**:
+  - `transfer_id`: Primary Key (UUID).
+  - `student_id`: Foreign Key $\to$ `students(student_id)` ON DELETE CASCADE.
+  - `from_class_id`: Foreign Key $\to$ `classes(class_id)` ON DELETE RESTRICT.
+  - `to_class_id`: Foreign Key $\to$ `classes(class_id)` ON DELETE RESTRICT.
+  - `effective_batch_number`: CHECK (`effective_batch_number BETWEEN 1 AND 12`).
+  - `created_by_user_id`: Foreign Key $\to$ `users(user_id)` ON DELETE RESTRICT.
+
+### 11. `class_teacher_assignments` (Phân công Giáo viên theo Đợt)
+- **Schema**: `class_teacher_assignments(<u>assignment_id</u>, class_id, batch_id, teacher_id, assigned_at, note)`
+- **Khoản ràng buộc**:
+  - `assignment_id`: Primary Key (UUID).
+  - `class_id`: Foreign Key $\to$ `classes(class_id)` ON DELETE CASCADE.
+  - `batch_id`: Foreign Key $\to$ `batches(batch_id)` ON DELETE CASCADE.
+  - `teacher_id`: Foreign Key $\to$ `teachers(teacher_id)` ON DELETE RESTRICT.
+  - **Unique Constraint**: `UNIQUE(batch_id)` (Mỗi đợt của 1 lớp chỉ do đúng 1 Giáo viên phụ trách tại một thời điểm).
+
 ---
 
 ## 2. PHÂN TÍCH CHỨNG MINH DẠNG CHUẨN (NORMALIZATION PROOF)
