@@ -75,13 +75,17 @@ Hệ thống phân chia 3 nhóm quyền nghiệp vụ chính:
   - Trạng thái Đợt học: *Đang học* (đợt hiện tại), *Sắp tới* (chưa học), *Đã hoàn thành* (kết thúc đợt).
   - Quản lý học phí đợt: Cho phép điều chỉnh tên đợt học, giáo viên phụ trách và mức học phí riêng cho từng đợt nếu có sự thay đổi.
 
-### 2.5. Nghiệp vụ Chuyển Lớp giữa chừng & Bảo lưu Công nợ (Student Class Transfers)
-- **Chuyển lớp giữa chừng**:
+### 2.5. Nghiệp vụ Chuyển Lớp Học Sinh & Bảo lưu Công nợ (Student Transfers & Batch Tracking)
+- **Quy tắc Chuyển Lớp giữa các Lớp học**:
   - Học sinh được phép chuyển từ lớp cũ sang lớp mới trong quá trình học (Ví dụ: Chuyển từ *Lớp 6A - Toán* sang *Lớp 6B - Toán*).
+- **Quản Lý Đợt Nhập Học & Đợt Chuyển Đi (Transfer-In / Transfer-Out Batch Tracking)**:
+  - **Nhập học mới giữa chừng**: Khi học sinh gia nhập lớp học từ một Đợt học bất kỳ (Ví dụ: Xin vào lớp từ Đợt 4), hệ thống phải **ghi nhớ chính xác Đợt bắt đầu học (`start_batch_number`)**. Hệ thống chỉ tính học phí và theo dõi nợ phí từ Đợt bắt đầu này trở đi, tuyệt đối không báo nợ ảo các đợt trước đó (Đợt 1, 2, 3).
+  - **Chuyển lớp giữa chừng**: Khi học sinh chuyển từ Lớp A sang Lớp B (Ví dụ: Học hết Đợt 4 ở Lớp A rồi chuyển sang Lớp B từ Đợt 5), hệ thống phải **ghi nhớ chính xác Đợt kết thúc ở Lớp A (`end_batch_number = 4`)** và **Đợt bắt đầu ở Lớp B (`start_batch_number = 5`)**.
+  - **Minh bạch sĩ số & công nợ**: Lớp A chỉ tính học phí và sĩ số đến Đợt 4. Lớp B tính học phí và sĩ số từ Đợt 5 trở đi. Tuyệt đối không gây thu trùng học phí ở cùng 1 đợt giữa 2 lớp.
 - **Quy tắc Bảo lưu & Thu nợ Nối tiếp**:
-  - Khi học sinh chuyển lớp, nếu **chưa đóng tiền các đợt ở lớp cũ**:
-    - Khoản nợ phí đợt học cũ ở lớp cũ được **giữ nguyên và bảo lưu**.
-    - Tại màn hình thu tiền POS, hệ thống sẽ tự động hiển thị **cả khoản nợ đợt cũ lẫn đợt ở lớp mới** để Thu ngân dễ dàng theo dõi và thu gộp trên 1 biên lai.
+  - Khi học sinh chuyển lớp, nếu **chưa đóng tiền các đợt ở lớp cũ** (Ví dụ: Còn nợ Đợt 2, 3 của Lớp A):
+    - Khoản nợ phí đợt học cũ ở Lớp A được **giữ nguyên và bảo lưu** tại đúng Đợt học đó.
+    - Tại màn hình thu tiền POS, hệ thống sẽ tự động hiển thị **cả khoản nợ đợt cũ ở Lớp A lẫn các đợt ở Lớp B** để Thu ngân dễ dàng theo dõi và thu gộp trên 1 biên lai.
 
 ### 2.6. Nghiệp vụ Phân công Giáo viên theo Đợt & Quyết toán Thù lao (Teacher Assignment per Batch)
 - **Thay đổi Giáo viên theo Đợt**:
