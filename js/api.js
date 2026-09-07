@@ -142,6 +142,16 @@ export const api = {
     return data;
   },
 
+  async setCurrentClassBatch(classId, targetBatchNumber) {
+    // Set batches < target to COMPLETED
+    await supabase.from('batches').update({ status: 'COMPLETED' }).eq('class_id', classId).lt('batch_number', targetBatchNumber);
+    // Set target batch to DANG_HOC
+    await supabase.from('batches').update({ status: 'DANG_HOC' }).eq('class_id', classId).eq('batch_number', targetBatchNumber);
+    // Set batches > target to UPCOMING
+    await supabase.from('batches').update({ status: 'UPCOMING' }).eq('class_id', classId).gt('batch_number', targetBatchNumber);
+    return true;
+  },
+
   // --- ENROLLMENTS ---
   async getEnrollmentsByStudent(studentId) {
     const { data, error } = await supabase

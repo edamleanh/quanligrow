@@ -257,9 +257,16 @@ export async function renderClassDetailView(container, classId) {
                   </td>
                   <td>${b.teachers ? b.teachers.full_name : '<span style="color: var(--text-light)">Theo GV lớp</span>'}</td>
                   <td>
-                    <button class="btn btn-secondary btn-sm" onclick="window.showEditBatchModal('${b.batch_id}', '${b.batch_name}', ${b.fee_rate}, '${b.status}', '${b.teacher_id || ''}')">
-                      ✏️ Sửa Đợt
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                      <button class="btn btn-secondary btn-sm" onclick="window.showEditBatchModal('${b.batch_id}', '${b.batch_name}', ${b.fee_rate}, '${b.status}', '${b.teacher_id || ''}')">
+                        ✏️ Sửa Đợt
+                      </button>
+                      ${b.status !== 'DANG_HOC' ? `
+                        <button class="btn btn-primary btn-sm" onclick="window.quickSetCurrentBatch('${classObj.class_id}', ${b.batch_number})">
+                          ⚡ Đặt Đợt Hiện Tại
+                        </button>
+                      ` : '<span style="font-size: 12px; color: var(--teal-600); font-weight: 700;">🟢 Đang diễn ra</span>'}
+                    </div>
                   </td>
                 </tr>
               `).join('')}
@@ -410,4 +417,19 @@ window.showEditBatchModal = function(batchId, batchName, feeRate, status, teache
       }
     };
   });
+};
+
+// 1-Click Quick Set Current Batch for a Class
+window.quickSetCurrentBatch = async function(classId, batchNumber) {
+  if (!confirm(`Bạn có chắc muốn chuyển Lớp này sang Đợt ${batchNumber}? (Các đợt trước sẽ tự động chuyển thành "Đã Kết Thúc", đợt sau thành "Sắp Học")`)) {
+    return;
+  }
+  try {
+    await api.setCurrentClassBatch(classId, batchNumber);
+    showToast(`Đã cập nhật Lớp học sang Đợt ${batchNumber} thành công!`);
+    renderClassDetailView(document.getElementById('app-view'), classId);
+  } catch (err) {
+    console.error('Error quick setting batch:', err);
+    showToast('Lỗi chuyển đợt: ' + err.message, 'error');
+  }
 };
