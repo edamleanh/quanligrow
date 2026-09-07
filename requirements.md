@@ -18,15 +18,21 @@ Hệ thống phân chia 3 nhóm quyền chính:
 - 👑 **Admin (Chủ trung tâm)**:
   - Toàn quyền quản trị hệ thống, quản lý tài khoản người dùng và phân quyền.
   - Cấu hình môn học, bảng giá học phí gốc.
-  - Xem báo cáo tổng quan doanh thu, thống kê nợ phí toàn trung tâm.
+  - Màn hình mặc định sau đăng nhập: **Dashboard Doanh thu Hôm nay** & **Thống kê Lớp có nhiều HS nợ các đợt đã học xong**.
 - 💵 **Thu ngân (Cashier)**:
   - Quản lý hồ sơ học sinh và đăng ký lớp học.
-  - Lập biên lai thu tiền trực tiếp (In máy - `IN_MAY`).
-  - Nhập bổ sung biên lai thu tay từ trước (`NHAP_TAY`).
-  - Tra cứu tình trạng đóng phí, in phiếu thu và lọc danh sách nợ phí.
+  - Màn hình mặc định sau đăng nhập: **Màn hình Thu tiền POS** / **Tra cứu Học sinh**.
+  - Lập biên lai thu tiền trực tiếp (`IN_MAY`) hoặc bổ sung (`NHAP_TAY`).
+  - Đóng gộp nhiều môn / nhiều đợt trong 1 biên lai.
 - 👨‍🏫 **Giáo viên (Teacher)**:
-  - Xem danh sách học sinh thuộc các lớp do mình phụ trách.
-  - Xem thông tin tổng quan của lớp học (sĩ số, môn, khối).
+  - Màn hình mặc định sau đăng nhập: **Danh sách Lớp phụ trách**.
+  - Xem thông tin tổng quan sĩ số, môn, khối của các lớp dạy.
+
+### 1.4. Thương hiệu & Phong cách Giao diện (Branding & Theme)
+- **Tên đơn vị**: **Trung Tâm Ngoại Ngữ Grow**
+- **Phong cách Giao diện**: Giáo dục tươi tắn, **Light Mode** (Sáng thanh lịch, tối giản).
+- **Màu sắc Chủ đạo**: **Xanh Emerald chuyên nghiệp** (`#059669` / `#10B981`), kết hợp với nền Slate/Nắng ấm hài hòa.
+- **Chế độ Demo Quick Switcher**: Hỗ trợ thanh chuyển đổi quyền nhanh 1-Click (`Admin`, `Thu ngân`, `Giáo viên`) trên Header để test giao diện.
 
 ---
 
@@ -34,9 +40,10 @@ Hệ thống phân chia 3 nhóm quyền chính:
 
 ### 2.1. Danh mục Hệ thống (System Catalogs)
 - **Khối (Grades)**: Cố định từ **Khối 1 đến Khối 12** (CHECK `grade BETWEEN 1 AND 12`).
-- **Môn học (Subjects)**:
-  - Danh mục mặc định: `Toán`, `Lý`, `Hóa`, `Văn`, `Anh Văn`, `GVNN` (Giáo viên nước ngoài).
-  - Admin có quyền thêm/sửa/xóa môn học mới vào hệ thống.
+- **Môn học & Mức phí mặc định**:
+  - Môn thông thường (`Toán`, `Lý`, `Hóa`, `Anh Văn`, `GVNN`): Mức học phí mặc định **350.000 VNĐ / đợt**.
+  - Môn `Văn` (`Ngữ Văn`): Mức học phí mặc định **300.000 VNĐ / đợt**.
+  - Admin có quyền điều chỉnh học phí mặc định của môn/lớp hoặc từng đợt cụ thể.
 
 ### 2.2. Quản lý Giáo viên (Teachers)
 - **Thông tin lưu trữ**:
@@ -78,23 +85,29 @@ Hệ thống phân chia 3 nhóm quyền chính:
 
 ## 3. LOGIC THU HỌC PHÍ, BIÊN LAI & CÔNG NỢ (PAYMENTS & DEBT LOGIC)
 
-### 3.1. Quy tắc Lập Biên Lai (Receipt Management)
+### 3.1. Quy tắc Lập Biên Lai & Màn hình POS (POS & Receipt Management)
+- **Giao diện POS Chọn Học sinh Thông minh**:
+  - Khi Thu ngân tìm kiếm và chọn 1 Học sinh:
+    - Hệ thống ngay lập tức tải danh sách **Tất cả các Lớp học sinh đang ghi danh**.
+    - Kèm theo danh sách **12 Đợt học** của từng lớp, hiển thị trực quan:
+      - Đợt hiện tại (`DANG_HOC`): Đã đóng / Chưa đóng.
+      - Các đợt quá hạn (`COMPLETED`): Còn nợ đợt nào chưa đóng.
+      - Các đợt sắp tới (`UPCOMING`): Có thể chọn đóng trước.
+    - Thu ngân chỉ cần click chọn 1 hoặc nhiều đợt/nhiều lớp để tự động gộp vào danh sách thanh toán.
 - **Gộp nhiều mục thanh toán trên 1 Biên lai**:
   - 1 Biên lai cho phép 1 học sinh đóng tiền cho **nhiều lớp** và **nhiều đợt học** khác nhau cùng một lúc.
   - *Ví dụ*: Biên lai `#REC-2026-001` thu tiền học sinh A gồm:
-    1. Lớp 6A-Toán: Đợt 1 (800.000đ)
-    2. Lớp 6A-Toán: Đợt 2 (800.000đ)
-    3. Lớp 6A-Văn: Đợt 1 (700.000đ)
-    $\to$ **Tổng tiền biên lai**: 2.300.000 VNĐ.
+    1. Lớp 6A-Toán: Đợt 1 (350.000đ)
+    2. Lớp 6A-Toán: Đợt 2 (350.000đ)
+    3. Lớp 6A-Văn: Đợt 1 (300.000đ)
+    $\to$ **Tổng tiền biên lai**: 1.000.000 VNĐ.
 - **Cảnh báo Học sinh mới / Đóng học phí lần đầu**:
-  - Khi thu ngân thêm 1 dòng thanh toán `[Học sinh X, Lớp Y, Đợt Z]`:
-    - Hệ thống tự động truy vấn lịch sử đóng tiền của `Học sinh X` tại `Lớp Y`.
-    - Nếu **chưa từng có bản ghi đóng phí nào trước đó cho lớp này**, hệ thống hiển thị Popup cảnh báo:
-      > ⚠️ **Cảnh báo**: Đây là lần đầu tiên học sinh đóng học phí cho lớp này. Vui lòng kiểm tra và điều chỉnh số tiền đợt đầu cho phù hợp (nếu học sinh vào học giữa chừng)!
-    - Cho phép Thu ngân chủ động chỉnh sửa trực tiếp số tiền thực thu của đợt đó trên giao diện lập biên lai.
+  - Khi chọn đợt đóng phí cho một lớp:
+    - Hệ thống tự động kiểm tra nếu đây là lần đóng đầu tiên cho lớp này.
+    - Hiển thị Popup cảnh báo nhắc nhở kiểm tra giảm giá/trừ tiền học giữa chừng nếu học sinh mới vào học.
 - **Phân loại Biên lai (`receipt_type`)**:
   - `IN_MAY`: Biên lai lập trực tiếp trên web và in phiếu thu máy.
-  - `NHAP_TAY`: Biên lai thu bằng cuống sổ tay từ trước, nhập bổ sung vào hệ thống để đồng bộ số liệu. Yêu cầu nhập thêm ô: **"Số biên lai tay / Mã tham chiếu" (`manual_receipt_code`)**.
+  - `NHAP_TAY`: Biên lai thu bằng cuống sổ tay từ trước, nhập bổ sung vào hệ thống để đồng bộ số liệu (`manual_receipt_code`).
 - **Thông tin Lưu trữ Biên lai (Receipt Audit Schema)**:
   - **Thông tin chung (Header)**: Mã biên lai, Loại biên lai (`IN_MAY` | `NHAP_TAY`), Mã biên lai tay (nếu có), Ngày lập, Người lập (User/Thu ngân), Học sinh, Tổng tiền.
   - **Chi tiết biên lai (Line Items)**: Mã Lớp, Mã Đợt, Số tiền thực thu của dòng, Ghi chú dòng.
