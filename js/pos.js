@@ -1,4 +1,4 @@
-// EduManager V2 - Module Thu Tiền POS & Tra Cứu Công Nợ Theo Lớp (Chuẩn Requirements 3.1 & 3.2)
+// EduManager V2 - Module Thu Tiền POS & Tra Cứu Công Nợ Theo Lớp (Phân Nhóm, Cảnh Báo & Cho Phép Chỉnh Sửa Số Tiền Thực Thu)
 
 let posSelectedStudent = null;
 let posSelectedBatchIds = new Set();
@@ -329,6 +329,29 @@ function toggleBatchSelection(batchId) {
   updatePosCheckoutSummary();
 }
 
+function updateCustomBatchFee(batchId, val) {
+  const b = posBatchesMap.get(batchId);
+  if (b) {
+    b.custom_fee = Number(val);
+  }
+  calculatePosTotal();
+}
+
+function calculatePosTotal() {
+  const totalAmountEl = document.getElementById('pos-total-amount');
+  let total = 0;
+  posSelectedBatchIds.forEach(bId => {
+    const b = posBatchesMap.get(bId);
+    if (b) {
+      const fee = b.custom_fee !== undefined ? b.custom_fee : Number(b.fee_amount || 350000);
+      total += fee;
+    }
+  });
+  if (totalAmountEl) {
+    totalAmountEl.textContent = `${total.toLocaleString('vi-VN')} VNĐ`;
+  }
+}
+
 function updatePosCheckoutSummary() {
   const selectedListEl = document.getElementById('pos-selected-batches-list');
   const totalAmountEl = document.getElementById('pos-total-amount');
@@ -343,34 +366,53 @@ function updatePosCheckoutSummary() {
     return;
   }
 
-  let total = 0;
-  const names = [];
   let isFirstTimePaymentForAnyClass = false;
 
-  posSelectedBatchIds.forEach(bId => {
+  const itemsHtml = Array.from(posSelectedBatchIds).map(bId => {
     const b = posBatchesMap.get(bId);
-    if (b) {
-      total += Number(b.fee_amount || 350000);
-      names.push(b.name);
+    if (!b) return '';
 
-      // Check if student has paid 0 batches for this class
-      const previousPaidCount = posStudentClassesPaidCountsMap.get(b.class_id) || 0;
-      if (previousPaidCount === 0) {
-        isFirstTimePaymentForAnyClass = true;
-      }
+    // Check if student has paid 0 batches for this class
+    const previousPaidCount = posStudentClassesPaidCountsMap.get(b.class_id) || 0;
+    if (previousPaidCount === 0) {
+      isFirstTimePaymentForAnyClass = true;
     }
-  });
+
+    const currentFee = b.custom_fee !== undefined ? b.custom_fee : Number(b.fee_amount || 350000);
+
+    return `
+      <div style="margin-bottom: 12px; background: #ffffff; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 6px;">• ${b.name}</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="font-size: 12px; color: var(--text-secondary);">Thực thu đợt này:</span>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="number" id="pos-item-fee-${b.id}" class="form-control-simple" 
+                   value="${currentFee}" step="10000" min="0" 
+                   style="max-width: 120px; font-weight: 700; color: var(--primary); text-align: right; padding: 4px 8px;"
+                   oninput="updateCustomBatchFee('${b.id}', this.value)">
+            <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">đ</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 
   if (warningBox) {
     if (isFirstTimePaymentForAnyClass) {
       warningBox.style.display = 'block';
+      warningBox.innerHTML = `
+        <strong style="display: flex; align-items: center; gap: 6px; font-size: 13px; margin-bottom: 4px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> CẢNH BÁO HỌC SINH MỚI / ĐÓNG PHÍ LẦN ĐẦU
+        </strong>
+        <span>Đây là lần đầu tiên học sinh đóng học phí cho lớp này! Bạn có thể chỉnh sửa trực tiếp số tiền ở ô <strong>"Thực thu đợt này"</strong> nếu học sinh được giảm giá hoặc vào học giữa chừng.</span>
+      `;
     } else {
       warningBox.style.display = 'none';
     }
   }
 
-  selectedListEl.innerHTML = names.map(n => `<div style="margin-bottom: 4px;">• <strong>${n}</strong></div>`).join('');
-  totalAmountEl.textContent = `${total.toLocaleString('vi-VN')} VNĐ`;
+  selectedListEl.innerHTML = itemsHtml;
+  calculatePosTotal();
   btnSubmit.disabled = false;
 }
 
@@ -386,10 +428,18 @@ async function handleSubmitPosReceipt() {
     return;
   }
 
-  const selectedItemsList = Array.from(posSelectedBatchIds).map(bId => posBatchesMap.get(bId));
+  const selectedItemsList = Array.from(posSelectedBatchIds).map(bId => {
+    const b = posBatchesMap.get(bId);
+    const feeToPay = b.custom_fee !== undefined ? b.custom_fee : Number(b ? b.fee_amount : 350000);
+    return {
+      ...b,
+      fee_amount: feeToPay
+    };
+  });
+
   let totalAmount = 0;
   selectedItemsList.forEach(b => {
-    totalAmount += Number(b ? b.fee_amount : 350000);
+    totalAmount += Number(b.fee_amount);
   });
 
   try {
@@ -412,7 +462,7 @@ async function handleSubmitPosReceipt() {
     const itemsHtml = selectedItemsList.map(b => `
       <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
         <span>• ${b ? b.name : 'Học phí đợt'}</span>
-        <strong>${Number(b ? b.fee_amount : 350000).toLocaleString('vi-VN')} VNĐ</strong>
+        <strong>${Number(b.fee_amount).toLocaleString('vi-VN')} VNĐ</strong>
       </div>
     `).join('');
 
