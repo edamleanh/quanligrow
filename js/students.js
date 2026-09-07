@@ -62,8 +62,13 @@ function renderStudentsTable(students) {
   }).join('');
 }
 
-async function openStudentDetailPage(studentId) {
+async function openStudentDetailPage(studentId, updateHash = true) {
   currentSelectedStudentId = studentId;
+
+  if (updateHash) {
+    window.location.hash = `#/students/detail?id=${studentId}`;
+    return;
+  }
 
   try {
     const data = await ApiService.getStudentDetails(studentId);
@@ -117,7 +122,7 @@ async function openStudentDetailPage(studentId) {
     `).join('') : `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Chưa đóng biên lai nào.</td></tr>`;
 
     // Navigate to Full Page Detail View
-    navigateToView('student-detail');
+    navigateToView('student-detail', false);
   } catch (err) {
     console.error('Error fetching student details:', err);
     alert('Không thể lấy chi tiết học sinh: ' + err.message);

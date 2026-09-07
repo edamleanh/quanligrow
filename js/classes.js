@@ -44,8 +44,13 @@ function renderClassesTable(classes) {
   `).join('');
 }
 
-async function openClassDetailPage(classId) {
+async function openClassDetailPage(classId, updateHash = true) {
   currentSelectedClassId = classId;
+
+  if (updateHash) {
+    window.location.hash = `#/classes/detail?id=${classId}`;
+    return;
+  }
 
   try {
     const data = await ApiService.getClassDetails(classId);
@@ -106,7 +111,7 @@ async function openClassDetailPage(classId) {
     `).join('') : `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Chưa có học sinh nào trong lớp.</td></tr>`;
 
     // Navigate to Full Page Class Detail
-    navigateToView('class-detail');
+    navigateToView('class-detail', false);
   } catch (err) {
     alert('Lỗi lấy chi tiết lớp học: ' + err.message);
   }

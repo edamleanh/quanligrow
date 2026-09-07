@@ -1,4 +1,4 @@
-// EduManager V2 - Main App Router & Controller
+// EduManager V2 - Main App Router & Controller (Hash Routing: /#dashboard, /#students, /#students/detail?id=...)
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -13,7 +13,7 @@ function initApp() {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       const targetView = item.dataset.view;
-      navigateToView(targetView);
+      navigateToView(targetView, true);
     });
   });
 
@@ -39,11 +39,59 @@ function initApp() {
   initTeachersEvents();
   initPosModule();
 
-  // Load Initial View (Dashboard)
-  navigateToView('dashboard');
+  // Setup Hash Change Listener for URL Routing
+  window.addEventListener('hashchange', handleHashRouting);
+
+  // Handle Initial Route from URL
+  handleHashRouting();
 }
 
-function navigateToView(viewName) {
+function handleHashRouting() {
+  const rawHash = window.location.hash || '#/dashboard';
+  const cleanHash = rawHash.replace(/^#\/?/, '');
+  const [routePath, queryString] = cleanHash.split('?');
+  const params = new URLSearchParams(queryString || '');
+
+  if (routePath === 'students/detail') {
+    const id = params.get('id');
+    if (id) {
+      openStudentDetailPage(id, false);
+    } else {
+      navigateToView('students', false);
+    }
+  } else if (routePath === 'classes/detail') {
+    const id = params.get('id');
+    if (id) {
+      openClassDetailPage(id, false);
+    } else {
+      navigateToView('classes', false);
+    }
+  } else if (routePath === 'teachers/detail') {
+    const id = params.get('id');
+    if (id) {
+      openTeacherDetailPage(id, false);
+    } else {
+      navigateToView('teachers', false);
+    }
+  } else if (routePath === 'students') {
+    navigateToView('students', false);
+  } else if (routePath === 'classes') {
+    navigateToView('classes', false);
+  } else if (routePath === 'teachers') {
+    navigateToView('teachers', false);
+  } else if (routePath === 'pos') {
+    navigateToView('pos', false);
+  } else {
+    navigateToView('dashboard', false);
+  }
+}
+
+function navigateToView(viewName, updateHash = true) {
+  if (updateHash) {
+    window.location.hash = `#/${viewName}`;
+    return; // Setting window.location.hash will trigger handleHashRouting via hashchange listener
+  }
+
   // Map detail sub-views to parent sidebar items
   let parentMenu = viewName;
   if (viewName === 'student-detail') parentMenu = 'students';

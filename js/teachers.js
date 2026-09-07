@@ -41,8 +41,13 @@ function renderTeachersTable(teachers) {
   `).join('');
 }
 
-async function openTeacherDetailPage(teacherId) {
+async function openTeacherDetailPage(teacherId, updateHash = true) {
   currentSelectedTeacherId = teacherId;
+
+  if (updateHash) {
+    window.location.hash = `#/teachers/detail?id=${teacherId}`;
+    return;
+  }
 
   try {
     const data = await ApiService.getTeacherDetails(teacherId);
@@ -73,7 +78,7 @@ async function openTeacherDetailPage(teacherId) {
       </tr>
     `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa có lượt thu học phí nào cho các đợt của giáo viên này trong CSDL.</td></tr>`;
 
-    navigateToView('teacher-detail');
+    navigateToView('teacher-detail', false);
   } catch (err) {
     alert('Lỗi lấy chi tiết giáo viên: ' + err.message);
   }
