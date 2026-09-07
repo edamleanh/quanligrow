@@ -145,6 +145,16 @@ export async function fetchClassesUnpaidCompletedStats() {
     return sortedClasses;
 }
 
+export async function fetchTeacherAssignedClasses(teacherName) {
+    const classes = await supabaseFetch(`v_class_details?teacher_name=ilike.*${encodeURIComponent(teacherName)}*&order=class_name.asc`);
+    return classes || [];
+}
+
+export async function fetchClassStudentsRoster(classId) {
+    const enrollments = await supabaseFetch(`enrollments?class_id=eq.${classId}&status=eq.ACTIVE&select=student_id,students(*)`);
+    return (enrollments || []).map(e => e.students);
+}
+
 export async function fetchOverallStats() {
     const students = await supabaseFetch(`students?select=student_id`, { headers: { 'Prefer': 'count=exact' } });
     const classes = await supabaseFetch(`classes?select=class_id`, { headers: { 'Prefer': 'count=exact' } });

@@ -15,18 +15,13 @@ Xây dựng ứng dụng Web quản trị nội bộ dành cho Trung tâm Dạy 
 
 ### 1.3. Phân quyền Người dùng (Role-Based Access Control - RBAC)
 Hệ thống phân chia 3 nhóm quyền chính:
-- 👑 **Admin (Chủ trung tâm)**:
-  - Toàn quyền quản trị hệ thống, quản lý tài khoản người dùng và phân quyền.
-  - Cấu hình môn học, bảng giá học phí gốc.
-  - Màn hình mặc định sau đăng nhập: **Dashboard Doanh thu Hôm nay** & **Thống kê Lớp có nhiều HS nợ các đợt đã học xong**.
-- 💵 **Thu ngân (Cashier)**:
-  - Quản lý hồ sơ học sinh và đăng ký lớp học.
-  - Màn hình mặc định sau đăng nhập: **Màn hình Thu tiền POS** / **Tra cứu Học sinh**.
-  - Lập biên lai thu tiền trực tiếp (`IN_MAY`) hoặc bổ sung (`NHAP_TAY`).
-  - Đóng gộp nhiều môn / nhiều đợt trong 1 biên lai.
-- 👨‍🏫 **Giáo viên (Teacher)**:
-  - Màn hình mặc định sau đăng nhập: **Danh sách Lớp phụ trách**.
-  - Xem thông tin tổng quan sĩ số, môn, khối của các lớp dạy.
+- 👑 **Admin (Chủ trung tâm - Full Access)**:
+  - Toàn quyền quản trị hệ thống: Dashboard Doanh thu, Báo cáo Nợ phí, Quản lý Lớp học, Đợt học, Môn học, Giáo viên và POS Thu tiền toàn trung tâm.
+- 💵 **Thu ngân (Cashier - Cashier Access Only)**:
+  - Lập biên lai thu tiền POS (`IN_MAY`, `NHAP_TAY`), tra cứu học sinh, lọc danh sách nợ phí và in phiếu thu toàn trung tâm.
+- 👨‍🏫 **Giáo viên (Teacher - Assigned Classes Management & POS)**:
+  - Quản lý các lớp do mình phụ trách: Xem sĩ số, danh sách học sinh.
+  - **Thu tiền học phí cho học sinh trong lớp mình dạy**: Được phép truy cập giao diện POS thu tiền và lập biên lai thu học phí cho học sinh thuộc các lớp do mình phụ trách.
 
 ### 1.4. Thương hiệu & Phong cách Giao diện (Branding & Theme)
 - **Tên đơn vị**: **Trung Tâm Ngoại Ngữ Grow**
