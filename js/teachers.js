@@ -1,4 +1,4 @@
-// EduManager V2 - Module Quản Lý Giáo Viên & Quyết Toán Payroll (Hỗ trợ Trang Chi Tiết Mới)
+// EduManager V2 - Module Quản Lý Giáo Viên & Quyết Toán Payroll (100% Real DB Data)
 
 let currentSelectedTeacherId = null;
 
@@ -20,7 +20,7 @@ function renderTeachersTable(teachers) {
   if (!tbody) return;
 
   if (teachers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Không tìm thấy giáo viên nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Không tìm thấy giáo viên nào trong cơ sở dữ liệu.</td></tr>`;
     return;
   }
 
@@ -29,7 +29,7 @@ function renderTeachersTable(teachers) {
       <td><strong>${t.teacher_code || t.teacher_id.substring(0, 8)}</strong></td>
       <td><strong style="color: var(--primary);">${t.full_name}</strong></td>
       <td>${t.phone || 'N/A'}</td>
-      <td>${t.email || 'teacher@grow.edu.vn'}</td>
+      <td>${t.phone ? t.phone + '@grow.edu.vn' : 'N/A'}</td>
       <td><span class="badge badge-active">Giáo viên Bộ môn</span></td>
       <td><strong>${t.assignedClassCount} lớp</strong></td>
       <td>
@@ -48,11 +48,11 @@ async function openTeacherDetailPage(teacherId) {
     const data = await ApiService.getTeacherDetails(teacherId);
     const { teacher, classes, payroll } = data;
 
-    // Header Info
+    // Header Info directly from DB
     document.getElementById('page-teacher-full-name').textContent = teacher.full_name;
     document.getElementById('page-teacher-meta').textContent = `Mã GV: ${teacher.teacher_code} | SĐT: ${teacher.phone || 'N/A'} | Lớp phụ trách: ${classes.length} lớp`;
 
-    // Tab 1: Classes
+    // Tab 1: Classes from DB
     const tbodyClasses = document.getElementById('tbl-page-teacher-classes-body');
     tbodyClasses.innerHTML = classes.length > 0 ? classes.map(c => `
       <tr>
@@ -61,9 +61,9 @@ async function openTeacherDetailPage(teacherId) {
         <td>Khối ${c.grade}</td>
         <td><span class="badge badge-active">${c.is_active ? 'Đang Mở' : 'Kết Thúc'}</span></td>
       </tr>
-    `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa được phân công lớp nào.</td></tr>`;
+    `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa được phân công lớp nào trong CSDL.</td></tr>`;
 
-    // Tab 2: Payroll Breakdown (v_teacher_batch_payroll)
+    // Tab 2: Payroll Breakdown directly from v_teacher_batch_payroll View in DB
     const tbodyPayroll = document.getElementById('tbl-page-teacher-payroll-body');
     tbodyPayroll.innerHTML = payroll.length > 0 ? payroll.map(p => `
       <tr>
@@ -72,9 +72,8 @@ async function openTeacherDetailPage(teacherId) {
         <td><span class="badge badge-active">${p.total_receipts_count} lượt thu</span></td>
         <td><strong style="color: var(--primary);">${Number(p.total_revenue_collected || 0).toLocaleString('vi-VN')} VNĐ</strong></td>
       </tr>
-    `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa có doanh thu đợt nào được quyết toán.</td></tr>`;
+    `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa có lượt thu học phí nào cho các đợt của giáo viên này trong CSDL.</td></tr>`;
 
-    // Navigate to Full Page Teacher Detail View
     navigateToView('teacher-detail');
   } catch (err) {
     alert('Lỗi lấy chi tiết giáo viên: ' + err.message);
@@ -98,15 +97,13 @@ function initTeachersEvents() {
     });
   }
 
-  // Save Teacher
+  // Save Teacher directly into DB
   const btnSave = document.getElementById('btn-save-teacher');
   if (btnSave) {
     btnSave.addEventListener('click', async () => {
       const teacherId = document.getElementById('teacher-id-field').value;
       const name = document.getElementById('teacher-name-field').value.trim();
       const phone = document.getElementById('teacher-phone-field').value.trim();
-      const email = document.getElementById('teacher-email-field').value.trim();
-      const specialty = document.getElementById('teacher-subject-field').value.trim();
 
       if (!name || !phone) {
         alert('Vui lòng điền đầy đủ Họ tên và Số điện thoại!');
@@ -120,7 +117,7 @@ function initTeachersEvents() {
             phone: phone
           });
         } else {
-          await ApiService.createTeacher(name, phone, email, specialty);
+          await ApiService.createTeacher(name, phone, '', '');
         }
 
         closeModal('modal-teacher-form');

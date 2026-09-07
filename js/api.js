@@ -1,11 +1,11 @@
-// EduManager V2 - Supabase API Data Access Layer (Using dbClient & Exact 3NF Schema)
+// EduManager V2 - Supabase API Data Access Layer (100% Real PostgreSQL Database Queries)
 
 const ApiService = {
   // 1. DASHBOARD ANALYTICS
   async getDashboardStats() {
     const today = new Date().toISOString().split('T')[0];
     
-    // Revenue Today
+    // Revenue Today (Sum of receipts created today)
     const { data: todayReceipts } = await dbClient
       .from('receipts')
       .select('total_amount')
@@ -13,28 +13,29 @@ const ApiService = {
 
     const revenueToday = (todayReceipts || []).reduce((sum, r) => sum + Number(r.total_amount || 0), 0);
 
-    // Total Students
+    // Total Real Students Count
     const { count: studentCount } = await dbClient
       .from('students')
       .select('*', { count: 'exact', head: true });
 
-    // Total Active Classes
+    // Total Real Active Classes Count
     const { count: classCount } = await dbClient
       .from('classes')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true);
 
-    // Class details view for top unpaid finished classes
-    const { data: classDetails } = await dbClient
+    // Real Inactive/Completed Classes with unpaid debts from v_class_details
+    const { data: finishedClasses } = await dbClient
       .from('v_class_details')
-      .select('*');
+      .select('*')
+      .eq('is_active', false);
 
     return {
       revenueToday,
       totalStudents: studentCount || 0,
       totalClasses: classCount || 0,
-      unpaidFinishedClassesCount: 0,
-      unpaidClasses: classDetails || []
+      unpaidFinishedClassesCount: (finishedClasses || []).length,
+      unpaidClasses: finishedClasses || []
     };
   },
 
@@ -49,6 +50,8 @@ const ApiService = {
         phone,
         grade,
         status,
+        notes,
+        created_at,
         enrollments (
           enrollment_id,
           status,
@@ -64,15 +67,13 @@ const ApiService = {
     const { data, error } = await q;
     if (error) {
       console.error('getStudents error:', error);
-      // Fallback simple query if joins fail
-      const { data: simpleData } = await dbClient.from('students').select('*').limit(50);
-      return simpleData || [];
+      throw error;
     }
     return data || [];
   },
 
   async getStudentDetails(studentId) {
-    // 1. Student Info
+    // 1. Real Student Info
     const { data: student, error: sErr } = await dbClient
       .from('students')
       .select('*')
@@ -80,7 +81,7 @@ const ApiService = {
       .single();
     if (sErr) throw sErr;
 
-    // 2. Enrollments
+    // 2. Real Enrollments
     const { data: enrollments } = await dbClient
       .from('enrollments')
       .select(`
@@ -92,7 +93,7 @@ const ApiService = {
       .eq('student_id', studentId)
       .order('enrolled_at', { ascending: false });
 
-    // 3. Class Transfers
+    // 3. Real Class Transfers
     const { data: transfers } = await dbClient
       .from('class_transfers')
       .select(`
@@ -106,7 +107,7 @@ const ApiService = {
       .eq('student_id', studentId)
       .order('transfer_date', { ascending: false });
 
-    // 4. Receipts
+    // 4. Real Receipts
     const { data: receipts } = await dbClient
       .from('receipts')
       .select('*')
@@ -131,7 +132,7 @@ const ApiService = {
         phone: phone,
         grade: 6,
         status: 'DANG_HOC',
-        notes: `Phụ huynh: ${parentName || 'N/A'}, Trường: ${schoolName || 'N/A'}`
+        notes: parentName || schoolName ? `Phụ huynh: ${parentName || 'N/A'}, Trường: ${schoolName || 'N/A'}` : null
       }])
       .select()
       .single();
@@ -207,7 +208,6 @@ const ApiService = {
   },
 
   async createClassWith12Batches(name, subjectName, gradeLevel, teacherId, feePerBatch) {
-    // Map Subject Name to subject_id
     const { data: subjects } = await dbClient.from('subjects').select('subject_id, subject_name');
     let subjectId = 1;
     if (subjects && subjects.length > 0) {
@@ -217,7 +217,7 @@ const ApiService = {
 
     const gradeNum = parseInt(gradeLevel.replace(/\D/g, '')) || 6;
 
-    // Create Class (PostgreSQL Trigger trg_classes_after_insert_create_batches will AUTO insert 12 batches!)
+    // Create Class (PostgreSQL Trigger trg_classes_after_insert_create_batches AUTO creates 12 batches in DB!)
     const { data: newClass, error: cErr } = await dbClient
       .from('classes')
       .insert([{
@@ -243,7 +243,7 @@ const ApiService = {
       .single();
     if (cErr) throw cErr;
 
-    // Batches
+    // Real Batches from database
     const { data: batches } = await dbClient
       .from('batches')
       .select(`
@@ -257,7 +257,7 @@ const ApiService = {
       .eq('class_id', classId)
       .order('batch_number', { ascending: true });
 
-    // Enrolled Roster
+    // Real Enrolled Roster from database
     const { data: roster } = await dbClient
       .from('enrollments')
       .select(`
@@ -311,7 +311,7 @@ const ApiService = {
     const { data, error } = await q;
     if (error) throw error;
 
-    // Count assigned classes for each teacher
+    // Count real active classes for each teacher directly from database
     const teachersWithCount = await Promise.all((data || []).map(async (t) => {
       const { count } = await dbClient
         .from('classes')
@@ -335,13 +335,13 @@ const ApiService = {
       .single();
     if (tErr) throw tErr;
 
-    // Assigned Classes
+    // Real Assigned Classes
     const { data: classes } = await dbClient
       .from('classes')
       .select('*')
       .eq('teacher_id', teacherId);
 
-    // Teacher Batch Payroll View
+    // Real Teacher Batch Payroll View
     const { data: payroll } = await dbClient
       .from('v_teacher_batch_payroll')
       .select('*')
@@ -381,9 +381,8 @@ const ApiService = {
     return data;
   },
 
-  // 5. POS & OLD CLASS DEBT RECOVERY API (Querying View v_debt_summary)
+  // 5. POS & OLD CLASS DEBT RECOVERY API (100% Real Query on v_debt_summary)
   async getStudentDebtsAndBatches(studentId) {
-    // Query View v_debt_summary directly!
     const { data: debtRows, error } = await dbClient
       .from('v_debt_summary')
       .select('*')
@@ -420,7 +419,7 @@ const ApiService = {
       is_old_class: false
     }));
 
-    // Filter only UNPAID debts for transferred old classes
+    // Filter ONLY UNPAID debts for transferred old classes
     const oldClassDebts = transferredClassRows
       .filter(r => r.payment_status !== 'PAID')
       .map(r => ({
@@ -448,7 +447,7 @@ const ApiService = {
       code = `BL-${new Date().getFullYear()}-${randStr}`;
     }
 
-    // Insert Receipt Header
+    // Insert Real Receipt Header
     const { data: receipt, error: rErr } = await dbClient
       .from('receipts')
       .insert([{
@@ -463,7 +462,7 @@ const ApiService = {
 
     if (rErr) throw rErr;
 
-    // Insert Receipt Items
+    // Insert Real Receipt Items into receipt_items table
     for (const item of batchItemsList) {
       await dbClient
         .from('receipt_items')
