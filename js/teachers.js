@@ -1,4 +1,4 @@
-// EduManager V2 - Module Quản Lý Giáo Viên & Quyết Toán Payroll
+// EduManager V2 - Module Quản Lý Giáo Viên & Quyết Toán Payroll (Hỗ trợ Trang Chi Tiết Mới)
 
 let currentSelectedTeacherId = null;
 
@@ -33,25 +33,27 @@ function renderTeachersTable(teachers) {
       <td><span class="badge badge-active">Giáo viên Bộ môn</span></td>
       <td><strong>${t.assignedClassCount} lớp</strong></td>
       <td>
-        <button class="btn btn-sm btn-secondary" onclick="openTeacherDetailModal('${t.teacher_id}')">
-          <i class="fa-solid fa-calculator"></i> Chi Tiết & Payroll
+        <button class="btn btn-sm btn-primary" onclick="openTeacherDetailPage('${t.teacher_id}')">
+          <i class="fa-solid fa-calculator"></i> Xem Trang Chi Tiết & Payroll
         </button>
       </td>
     </tr>
   `).join('');
 }
 
-async function openTeacherDetailModal(teacherId) {
+async function openTeacherDetailPage(teacherId) {
   currentSelectedTeacherId = teacherId;
 
   try {
     const data = await ApiService.getTeacherDetails(teacherId);
     const { teacher, classes, payroll } = data;
 
-    document.getElementById('teacher-detail-title').innerHTML = `👨‍🏫 Hồ Sơ Giáo Viên: ${teacher.full_name}`;
+    // Header Info
+    document.getElementById('page-teacher-full-name').textContent = teacher.full_name;
+    document.getElementById('page-teacher-meta').textContent = `Mã GV: ${teacher.teacher_code} | SĐT: ${teacher.phone || 'N/A'} | Lớp phụ trách: ${classes.length} lớp`;
 
     // Tab 1: Classes
-    const tbodyClasses = document.getElementById('tbl-teacher-classes-body');
+    const tbodyClasses = document.getElementById('tbl-page-teacher-classes-body');
     tbodyClasses.innerHTML = classes.length > 0 ? classes.map(c => `
       <tr>
         <td>${c.class_id.substring(0, 8)}...</td>
@@ -62,7 +64,7 @@ async function openTeacherDetailModal(teacherId) {
     `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa được phân công lớp nào.</td></tr>`;
 
     // Tab 2: Payroll Breakdown (v_teacher_batch_payroll)
-    const tbodyPayroll = document.getElementById('tbl-teacher-payroll-body');
+    const tbodyPayroll = document.getElementById('tbl-page-teacher-payroll-body');
     tbodyPayroll.innerHTML = payroll.length > 0 ? payroll.map(p => `
       <tr>
         <td><strong>${p.class_name}</strong></td>
@@ -72,7 +74,8 @@ async function openTeacherDetailModal(teacherId) {
       </tr>
     `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa có doanh thu đợt nào được quyết toán.</td></tr>`;
 
-    openModal('modal-teacher-detail');
+    // Navigate to Full Page Teacher Detail View
+    navigateToView('teacher-detail');
   } catch (err) {
     alert('Lỗi lấy chi tiết giáo viên: ' + err.message);
   }

@@ -1,4 +1,4 @@
-// EduManager V2 - Module Quản Lý Học Sinh
+// EduManager V2 - Module Quản Lý Học Sinh (Hỗ trợ Trang Chi Tiết Mới)
 
 let currentSelectedStudentId = null;
 
@@ -40,8 +40,8 @@ function renderStudentsTable(students) {
         <td>${className}</td>
         <td>${statusBadge}</td>
         <td>
-          <button class="btn btn-sm btn-secondary" onclick="openStudentDetailModal('${s.student_id}')">
-            <i class="fa-solid fa-eye"></i> Xem Hồ Sơ Chi Tiết
+          <button class="btn btn-sm btn-primary" onclick="openStudentDetailPage('${s.student_id}')">
+            <i class="fa-solid fa-eye"></i> Xem Trang Chi Tiết
           </button>
         </td>
       </tr>
@@ -49,25 +49,24 @@ function renderStudentsTable(students) {
   }).join('');
 }
 
-async function openStudentDetailModal(studentId) {
+async function openStudentDetailPage(studentId) {
   currentSelectedStudentId = studentId;
 
   try {
     const data = await ApiService.getStudentDetails(studentId);
     const { student, enrollments, transfers, receipts } = data;
 
-    // Header & Info Tab
-    document.getElementById('student-detail-title').innerHTML = `🎓 Hồ Sơ Chi Tiết: ${student.full_name}`;
-    document.getElementById('detail-student-full-name').textContent = student.full_name;
-    document.getElementById('detail-student-meta').textContent = `Mã HS: ${student.student_code} | SĐT: ${student.phone || 'Chưa có'} | Ghi chú: ${student.notes || 'Không có'}`;
+    // Header Info
+    document.getElementById('page-student-full-name').textContent = student.full_name;
+    document.getElementById('page-student-meta').textContent = `Mã HS: ${student.student_code} | SĐT: ${student.phone || 'Chưa có'} | Ghi chú: ${student.notes || 'Không có'}`;
 
     // Populate Transfer Class Select Dropdown
     const classes = await ApiService.getClasses();
-    const selectTransfer = document.getElementById('transfer-to-class-select');
+    const selectTransfer = document.getElementById('page-transfer-to-class-select');
     selectTransfer.innerHTML = classes.map(c => `<option value="${c.class_id}">${c.class_name} (${c.subject_name})</option>`).join('');
 
     // Tab 1: Enrolled Classes
-    const tblEnrolled = document.getElementById('tbl-student-enrolled-body');
+    const tblEnrolled = document.getElementById('tbl-page-student-enrolled-body');
     tblEnrolled.innerHTML = enrollments.length > 0 ? enrollments.map(e => `
       <tr>
         <td><strong>${e.classes ? e.classes.class_name : 'N/A'}</strong></td>
@@ -82,7 +81,7 @@ async function openStudentDetailModal(studentId) {
     `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa ghi danh lớp nào.</td></tr>`;
 
     // Tab 2: Class Transfers
-    const tblTransfers = document.getElementById('tbl-student-transfers-body');
+    const tblTransfers = document.getElementById('tbl-page-student-transfers-body');
     tblTransfers.innerHTML = transfers.length > 0 ? transfers.map(t => `
       <tr>
         <td><strong style="color: var(--danger-red);">${t.from_class ? t.from_class.class_name : 'N/A'}</strong></td>
@@ -93,7 +92,7 @@ async function openStudentDetailModal(studentId) {
     `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa có lịch sử chuyển lớp.</td></tr>`;
 
     // Tab 3: Receipts History
-    const tblReceipts = document.getElementById('tbl-student-receipts-body');
+    const tblReceipts = document.getElementById('tbl-page-student-receipts-body');
     tblReceipts.innerHTML = receipts.length > 0 ? receipts.map(r => `
       <tr>
         <td><strong>${r.receipt_code}</strong></td>
@@ -104,7 +103,8 @@ async function openStudentDetailModal(studentId) {
       </tr>
     `).join('') : `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Chưa đóng biên lai nào.</td></tr>`;
 
-    openModal('modal-student-detail');
+    // Navigate to Full Page Detail View
+    navigateToView('student-detail');
   } catch (err) {
     console.error('Error fetching student details:', err);
     alert('Không thể lấy chi tiết học sinh: ' + err.message);
@@ -117,12 +117,30 @@ function initStudentsEvents() {
     searchInput.addEventListener('input', () => loadStudentsModule());
   }
 
+  // Edit Student Info on Page
+  const btnEditPage = document.getElementById('btn-page-edit-student');
+  if (btnEditPage) {
+    btnEditPage.addEventListener('click', async () => {
+      if (!currentSelectedStudentId) return;
+      const data = await ApiService.getStudentDetails(currentSelectedStudentId);
+      const s = data.student;
+
+      document.getElementById('student-id-field').value = s.student_id;
+      document.getElementById('student-name-field').value = s.full_name;
+      document.getElementById('student-phone-field').value = s.phone;
+      document.getElementById('student-initial-class-group').style.display = 'none';
+      document.getElementById('modal-student-form-title').textContent = 'Chỉnh Sửa Thông Tin Học Sinh';
+      openModal('modal-student-form');
+    });
+  }
+
   // Open Add Student Modal
   const btnOpenAdd = document.getElementById('btn-open-add-student');
   if (btnOpenAdd) {
     btnOpenAdd.addEventListener('click', async () => {
       document.getElementById('form-student').reset();
       document.getElementById('student-id-field').value = '';
+      document.getElementById('student-initial-class-group').style.display = 'block';
       document.getElementById('modal-student-form-title').textContent = 'Thêm Mới Học Sinh';
 
       const classes = await ApiService.getClasses();
@@ -156,12 +174,13 @@ function initStudentsEvents() {
             full_name: name,
             phone: phone
           });
+          openStudentDetailPage(studentId);
         } else {
           await ApiService.createStudent(name, phone, parentName, schoolName, classId || null);
+          loadStudentsModule();
         }
 
         closeModal('modal-student-form');
-        loadStudentsModule();
         alert('Lưu thông tin học sinh thành công!');
       } catch (err) {
         alert('Lỗi lưu học sinh: ' + err.message);
@@ -169,14 +188,14 @@ function initStudentsEvents() {
     });
   }
 
-  // Execute Class Transfer
-  const btnTransfer = document.getElementById('btn-execute-transfer');
-  if (btnTransfer) {
-    btnTransfer.addEventListener('click', async () => {
+  // Execute Class Transfer on Full Page View
+  const btnPageTransfer = document.getElementById('btn-page-execute-transfer');
+  if (btnPageTransfer) {
+    btnPageTransfer.addEventListener('click', async () => {
       if (!currentSelectedStudentId) return;
 
-      const toClassId = document.getElementById('transfer-to-class-select').value;
-      const reason = document.getElementById('transfer-reason-input').value.trim();
+      const toClassId = document.getElementById('page-transfer-to-class-select').value;
+      const reason = document.getElementById('page-transfer-reason-input').value.trim();
 
       if (!toClassId) {
         alert('Vui lòng chọn lớp học mới!');
@@ -195,12 +214,11 @@ function initStudentsEvents() {
         return;
       }
 
-      if (confirm(`Bạn có chắc chắn muốn chuyển học sinh sang lớp mới không?`)) {
+      if (confirm(`Xác nhận chuyển học sinh sang lớp mới? Khoản nợ đợt cũ sẽ được lưu nối tiếp trong POS.`)) {
         try {
           await ApiService.transferStudentClass(currentSelectedStudentId, activeEnr.classes.class_id, toClassId, reason);
           alert('Chuyển lớp thành công! Khoản nợ cũ (nếu có) sẽ hiển thị trong khung đỏ khi Thu tiền.');
-          openStudentDetailModal(currentSelectedStudentId);
-          loadStudentsModule();
+          openStudentDetailPage(currentSelectedStudentId);
         } catch (err) {
           alert('Lỗi chuyển lớp: ' + err.message);
         }

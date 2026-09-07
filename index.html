@@ -130,8 +130,8 @@
                     <th>Mã Lớp</th>
                     <th>Tên Lớp Học</th>
                     <th>Giáo Viên Dạy</th>
-                    <th>Số HS Nợ</th>
-                    <th>Tổng Tiền Nợ Đợt Xong</th>
+                    <th>Số HS Đang Học</th>
+                    <th>Học Phí Gốc</th>
                     <th>Hành Động</th>
                   </tr>
                 </thead>
@@ -143,7 +143,7 @@
           </div>
         </section>
 
-        <!-- 2. STUDENTS VIEW -->
+        <!-- 2. STUDENTS VIEW (LIST) -->
         <section id="view-students" class="view-section">
           <div class="toolbar">
             <div class="search-input-group">
@@ -162,10 +162,10 @@
                   <th>Mã HS</th>
                   <th>Họ và Tên</th>
                   <th>Số Điện Thoại</th>
-                  <th>Phụ Huynh</th>
+                  <th>Ghi Chú</th>
                   <th>Lớp Hiện Tại</th>
                   <th>Trạng Thái</th>
-                  <th>Chi Tiết</th>
+                  <th>Xem Chi Tiết</th>
                 </tr>
               </thead>
               <tbody id="tbl-students-body">
@@ -175,7 +175,107 @@
           </div>
         </section>
 
-        <!-- 3. CLASSES VIEW -->
+        <!-- 2.1 FULL PAGE STUDENT DETAIL VIEW -->
+        <section id="view-student-detail" class="view-section">
+          <div style="margin-bottom: 20px;">
+            <button class="btn btn-secondary btn-sm" onclick="navigateToView('students')">
+              <i class="fa-solid fa-arrow-left"></i> Quay lại Danh sách Học sinh
+            </button>
+          </div>
+
+          <div class="card" style="background: linear-gradient(to right, #ecfdf5, #ffffff); border-color: var(--primary-border);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 id="page-student-full-name" style="font-size: 22px; font-weight: 800; color: var(--primary);">Họ và Tên Học Sinh</h3>
+                <p id="page-student-meta" style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">Mã HS: ... | SĐT: ...</p>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-page-edit-student"><i class="fa-solid fa-pen"></i> Sửa Thông Tin Cá Nhân</button>
+            </div>
+          </div>
+
+          <!-- TRANSFER CLASS CARD -->
+          <div class="card" style="border-color: var(--primary-border);">
+            <h4 style="font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 12px;">
+              <i class="fa-solid fa-right-left"></i> Thay Đổi Lớp Học (Chuyển Lớp)
+            </h4>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+              Chuyển học sinh sang lớp mới. Khoản nợ đợt ở lớp cũ (nếu có) sẽ được tự động bảo lưu nối tiếp và hiển thị khung đỏ trong POS.
+            </p>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Chọn Lớp Học Mới</label>
+                <select id="page-transfer-to-class-select" class="form-control-simple"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Lý Do Chuyển Lớp</label>
+                <input type="text" id="page-transfer-reason-input" class="form-control-simple" placeholder="Ví dụ: Đổi ca học, trùng lịch...">
+              </div>
+            </div>
+            <button class="btn btn-primary" id="btn-page-execute-transfer">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i> Xác Nhận Chuyển Lớp
+            </button>
+          </div>
+
+          <!-- DETAILS TABS -->
+          <div class="card">
+            <div class="modal-tabs" id="student-detail-page-tabs">
+              <div class="tab-item active" data-target="tab-page-student-enrolled">Lớp Đã Ghi Danh</div>
+              <div class="tab-item" data-target="tab-page-student-transfers">Lịch Sử Chuyển Lớp (Transfers)</div>
+              <div class="tab-item" data-target="tab-page-student-receipts">Lịch Sử Biên Lai Thu Tiền</div>
+            </div>
+
+            <div id="tab-page-student-enrolled" class="tab-content active">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Lớp Học</th>
+                      <th>Học Phí Gốc/Đợt</th>
+                      <th>Ngày Đăng Ký</th>
+                      <th>Trạng Thái Ghi Danh</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbl-page-student-enrolled-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-page-student-transfers" class="tab-content">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Lớp Cũ</th>
+                      <th>Lớp Mới</th>
+                      <th>Ngày Chuyển</th>
+                      <th>Lý Do Chuyển Lớp</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbl-page-student-transfers-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-page-student-receipts" class="tab-content">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Mã Biên Lai</th>
+                      <th>Ngày Thu</th>
+                      <th>Loại Thu</th>
+                      <th>Tổng Tiền Thu</th>
+                      <th>Mã Nhập Tay / Ghi Chú</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbl-page-student-receipts-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. CLASSES VIEW (LIST) -->
         <section id="view-classes" class="view-section">
           <div class="toolbar">
             <div class="search-input-group">
@@ -198,7 +298,7 @@
                   <th>Giáo Viên Phụ Trách</th>
                   <th>Sĩ Số</th>
                   <th>Học Phí Gốc/Đợt</th>
-                  <th>Quản Lý</th>
+                  <th>Quản Lý Chi Tiết</th>
                 </tr>
               </thead>
               <tbody id="tbl-classes-body">
@@ -208,12 +308,73 @@
           </div>
         </section>
 
-        <!-- 4. TEACHERS VIEW -->
+        <!-- 3.1 FULL PAGE CLASS DETAIL VIEW -->
+        <section id="view-class-detail" class="view-section">
+          <div style="margin-bottom: 20px;">
+            <button class="btn btn-secondary btn-sm" onclick="navigateToView('classes')">
+              <i class="fa-solid fa-arrow-left"></i> Quay lại Danh sách Lớp học
+            </button>
+          </div>
+
+          <div class="card" style="background: linear-gradient(to right, #ecfdf5, #ffffff); border-color: var(--primary-border);">
+            <h3 id="page-class-title" style="font-size: 22px; font-weight: 800; color: var(--primary);">Tên Lớp Học</h3>
+            <p id="page-class-meta" style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">Giáo viên phụ trách: ... | Học phí gốc: ...</p>
+          </div>
+
+          <div class="card">
+            <div class="modal-tabs" id="class-detail-page-tabs">
+              <div class="tab-item active" data-target="tab-page-class-batches">Quản Lý 12 Đợt Học</div>
+              <div class="tab-item" data-target="tab-page-class-roster">Danh Sách Học Sinh Trong Lớp</div>
+            </div>
+
+            <div id="tab-page-class-batches" class="tab-content active">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Số Đợt</th>
+                      <th>Tên Đợt Học</th>
+                      <th>Giáo Viên Dạy Đợt này</th>
+                      <th>Học Phí Đợt</th>
+                      <th>Trạng Thái</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbl-page-class-batches-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-page-class-roster" class="tab-content">
+              <div class="toolbar" style="margin-bottom: 16px;">
+                <div style="font-weight: 700; font-size: 15px;">Danh Sách Sĩ Số Lớp Học</div>
+                <button class="btn btn-sm btn-primary" id="btn-page-add-student-to-class">
+                  <i class="fa-solid fa-user-plus"></i> Ghi Danh Học Sinh Vào Lớp
+                </button>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Mã HS</th>
+                      <th>Họ và Tên</th>
+                      <th>Số Điện Thoại</th>
+                      <th>Trạng Thái Ghi Danh</th>
+                      <th>Hành Động</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbl-page-class-roster-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. TEACHERS VIEW (LIST) -->
         <section id="view-teachers" class="view-section">
           <div class="toolbar">
             <div class="search-input-group">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="search-teacher-input" class="input-control" placeholder="Tìm giáo viên theo Tên, SĐT, Môn dạy...">
+              <input type="text" id="search-teacher-input" class="input-control" placeholder="Tìm giáo viên theo Tên, SĐT...">
             </div>
             <button class="btn btn-primary" id="btn-open-add-teacher">
               <i class="fa-solid fa-user-plus"></i> Thêm mới Giáo viên
@@ -237,6 +398,62 @@
                 <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <!-- 4.1 FULL PAGE TEACHER DETAIL VIEW -->
+        <section id="view-teacher-detail" class="view-section">
+          <div style="margin-bottom: 20px;">
+            <button class="btn btn-secondary btn-sm" onclick="navigateToView('teachers')">
+              <i class="fa-solid fa-arrow-left"></i> Quay lại Danh sách Giáo viên
+            </button>
+          </div>
+
+          <div class="card" style="background: linear-gradient(to right, #ecfdf5, #ffffff); border-color: var(--primary-border);">
+            <h3 id="page-teacher-full-name" style="font-size: 22px; font-weight: 800; color: var(--primary);">Họ và Tên Giáo Viên</h3>
+            <p id="page-teacher-meta" style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">Mã GV: ... | SĐT: ...</p>
+          </div>
+
+          <div class="card">
+            <div class="modal-tabs" id="teacher-detail-page-tabs">
+              <div class="tab-item active" data-target="tab-page-teacher-classes">Lớp Đang & Đã Phụ Trách</div>
+              <div class="tab-item" data-target="tab-page-teacher-payroll">Báo Cáo Thù Lao & Doanh Thu Đợt (Payroll)</div>
+            </div>
+
+            <div id="tab-page-teacher-classes" class="tab-content active">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Mã Lớp</th>
+                      <th>Tên Lớp</th>
+                      <th>Khối</th>
+                      <th>Trạng Thái Lớp</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbl-page-teacher-classes-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-page-teacher-payroll" class="tab-content">
+              <div style="background: var(--primary-light); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 13px; color: var(--primary); font-weight: 600;">
+                <i class="fa-solid fa-calculator"></i> Bảng thù lao được tổng hợp chính xác theo các Đợt học mà Giáo viên trực tiếp phụ trách (View: <code>v_teacher_batch_payroll</code>).
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tên Lớp</th>
+                      <th>Đợt Học</th>
+                      <th>Số Lượt Thu Học Phí</th>
+                      <th>Tổng Doanh Thu Thu Được</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbl-page-teacher-payroll-body"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -334,8 +551,8 @@
     </main>
   </div>
 
-  <!-- MODALS SECTION -->
-  <!-- 1. MODAL ADD/EDIT STUDENT -->
+  <!-- CREATION & PRINT MODALS -->
+  <!-- 1. MODAL ADD/EDIT STUDENT FORM -->
   <div class="modal-backdrop" id="modal-student-form">
     <div class="modal-card">
       <div class="modal-header">
@@ -378,96 +595,7 @@
     </div>
   </div>
 
-  <!-- 2. MODAL STUDENT DETAIL (PROFILE + CLASS TRANSFERS + RECEIPTS) -->
-  <div class="modal-backdrop" id="modal-student-detail">
-    <div class="modal-card modal-lg">
-      <div class="modal-header">
-        <h3 class="modal-title" id="student-detail-title">🎓 Hồ Sơ Chi Tiết Học Sinh</h3>
-        <button class="btn-close" onclick="closeModal('modal-student-detail')"><i class="fa-solid fa-times"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-tabs">
-          <div class="tab-item active" data-target="tab-student-info">Thông tin & Chuyển Lớp</div>
-          <div class="tab-item" data-target="tab-student-enrolled">Lớp Đã Ghi Danh</div>
-          <div class="tab-item" data-target="tab-student-transfers">Lịch Sử Chuyển Lớp</div>
-          <div class="tab-item" data-target="tab-student-receipts">Lịch Sử Biên Lai</div>
-        </div>
-
-        <div id="tab-student-info" class="tab-content active">
-          <div class="card" style="background: #f8fafc; border: 1px solid var(--border-color);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <h4 id="detail-student-full-name" style="font-size: 18px; font-weight: 700; color: var(--primary);">Họ và Tên</h4>
-                <p id="detail-student-meta" style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">Mã HS: ... | SĐT: ...</p>
-              </div>
-              <button class="btn btn-secondary btn-sm" id="btn-edit-student-profile"><i class="fa-solid fa-pen"></i> Sửa Thông Tin</button>
-            </div>
-          </div>
-
-          <div class="card" style="border-color: var(--primary-border); background: var(--primary-light);">
-            <h4 style="font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-right-left"></i> Thay Đổi Lớp Học (Chuyển Lớp)</h4>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Chuyển học sinh sang lớp mới. Khoản nợ đợt ở lớp cũ (nếu có) sẽ được bảo lưu nối tiếp để thu trong POS.</p>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Chọn Lớp Học Mới</label>
-                <select id="transfer-to-class-select" class="form-control-simple"></select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Lý Do Chuyển Lớp</label>
-                <input type="text" id="transfer-reason-input" class="form-control-simple" placeholder="Ví dụ: Đổi ca học, trùng lịch...">
-              </div>
-            </div>
-            <button class="btn btn-primary" id="btn-execute-transfer"><i class="fa-solid fa-arrow-right-arrow-left"></i> Xác Nhận Chuyển Lớp</button>
-          </div>
-        </div>
-
-        <div id="tab-student-enrolled" class="tab-content">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Lớp Học</th>
-                <th>Giáo Viên</th>
-                <th>Ngày Đăng Ký</th>
-                <th>Trạng Thái</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-student-enrolled-body"></tbody>
-          </table>
-        </div>
-
-        <div id="tab-student-transfers" class="tab-content">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Lớp Cũ</th>
-                <th>Lớp Mới</th>
-                <th>Ngày Chuyển</th>
-                <th>Lý Do</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-student-transfers-body"></tbody>
-          </table>
-        </div>
-
-        <div id="tab-student-receipts" class="tab-content">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Mã Biên Lai</th>
-                <th>Ngày Thu</th>
-                <th>Loại Thu</th>
-                <th>Tổng Tiền</th>
-                <th>Ghi Chú</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-student-receipts-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 3. MODAL CREATE/EDIT CLASS (WITH AUTO 12 BATCH GENERATION) -->
+  <!-- 2. MODAL CREATE/EDIT CLASS FORM -->
   <div class="modal-backdrop" id="modal-class-form">
     <div class="modal-card">
       <div class="modal-header">
@@ -524,57 +652,7 @@
     </div>
   </div>
 
-  <!-- 4. MODAL CLASS DETAIL (BATCHES MANAGER + STUDENT ROSTER) -->
-  <div class="modal-backdrop" id="modal-class-detail">
-    <div class="modal-card modal-lg">
-      <div class="modal-header">
-        <h3 class="modal-title" id="class-detail-title">🏫 Quản Lý Chi Tiết Lớp Học</h3>
-        <button class="btn-close" onclick="closeModal('modal-class-detail')"><i class="fa-solid fa-times"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-tabs">
-          <div class="tab-item active" data-target="tab-class-batches">Quản Lý 12 Đợt Học</div>
-          <div class="tab-item" data-target="tab-class-roster">Danh Sách Học Sinh Trong Lớp</div>
-        </div>
-
-        <div id="tab-class-batches" class="tab-content active">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Số Đợt</th>
-                <th>Tên Đợt</th>
-                <th>Giáo Viên Dạy Đợt này</th>
-                <th>Học Phí Đợt</th>
-                <th>Trạng Thái</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-class-batches-body"></tbody>
-          </table>
-        </div>
-
-        <div id="tab-class-roster" class="tab-content">
-          <div class="toolbar" style="margin-bottom: 12px;">
-            <div style="font-weight: 600; font-size: 14px;">Danh Sách Sĩ Số Lớp Học</div>
-            <button class="btn btn-sm btn-primary" id="btn-open-add-student-to-class"><i class="fa-solid fa-plus"></i> Ghi Danh HS Vào Lớp</button>
-          </div>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Mã HS</th>
-                <th>Họ tên</th>
-                <th>SĐT</th>
-                <th>Trạng Thái Ghi Danh</th>
-                <th>Hành Động</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-class-roster-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 5. MODAL ADD/EDIT TEACHER -->
+  <!-- 3. MODAL ADD/EDIT TEACHER FORM -->
   <div class="modal-backdrop" id="modal-teacher-form">
     <div class="modal-card">
       <div class="modal-header">
@@ -611,54 +689,7 @@
     </div>
   </div>
 
-  <!-- 6. MODAL TEACHER DETAIL (CLASSES + BATCH PAYROLL) -->
-  <div class="modal-backdrop" id="modal-teacher-detail">
-    <div class="modal-card modal-lg">
-      <div class="modal-header">
-        <h3 class="modal-title" id="teacher-detail-title">👨‍🏫 Hồ Sơ Chi Tiết Giáo Viên</h3>
-        <button class="btn-close" onclick="closeModal('modal-teacher-detail')"><i class="fa-solid fa-times"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-tabs">
-          <div class="tab-item active" data-target="tab-teacher-classes">Lớp Đang & Đã Phụ Trách</div>
-          <div class="tab-item" data-target="tab-teacher-payroll">Báo Cáo Thù Lao & Doanh Thu Đợt (Payroll)</div>
-        </div>
-
-        <div id="tab-teacher-classes" class="tab-content active">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Mã Lớp</th>
-                <th>Tên Lớp</th>
-                <th>Môn Học</th>
-                <th>Sĩ Số</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-teacher-classes-body"></tbody>
-          </table>
-        </div>
-
-        <div id="tab-teacher-payroll" class="tab-content">
-          <div style="background: var(--primary-light); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 13px; color: var(--primary); font-weight: 600;">
-            <i class="fa-solid fa-calculator"></i> Bảng thù lao được tổng hợp chính xác theo các Đợt học mà Giáo viên trực tiếp phụ trách (View: <code>v_teacher_batch_payroll</code>).
-          </div>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Tên Lớp</th>
-                <th>Đợt Học</th>
-                <th>Số HS Đã Đóng</th>
-                <th>Tổng Doanh Thu Thu Được</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-teacher-payroll-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 7. MODAL RECEIPT PRINT -->
+  <!-- 4. MODAL RECEIPT PRINT -->
   <div class="modal-backdrop" id="modal-receipt-print">
     <div class="modal-card" style="max-width: 550px;">
       <div class="modal-header">

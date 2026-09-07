@@ -1,4 +1,4 @@
-// EduManager V2 - Module Quản Lý Lớp Học & Tự Động Sinh 12 Đợt Học
+// EduManager V2 - Module Quản Lý Lớp Học (Hỗ trợ Trang Chi Tiết Mới)
 
 let currentSelectedClassId = null;
 
@@ -34,25 +34,27 @@ function renderClassesTable(classes) {
       <td><span class="badge badge-active">${c.enrolled_count} học sinh</span></td>
       <td><strong>${Number(c.default_fee_rate).toLocaleString('vi-VN')} VNĐ</strong></td>
       <td>
-        <button class="btn btn-sm btn-secondary" onclick="openClassDetailModal('${c.class_id}')">
-          <i class="fa-solid fa-layer-group"></i> 12 Đợt & Sĩ Số
+        <button class="btn btn-sm btn-primary" onclick="openClassDetailPage('${c.class_id}')">
+          <i class="fa-solid fa-layer-group"></i> Xem Trang Chi Tiết & 12 Đợt
         </button>
       </td>
     </tr>
   `).join('');
 }
 
-async function openClassDetailModal(classId) {
+async function openClassDetailPage(classId) {
   currentSelectedClassId = classId;
 
   try {
     const data = await ApiService.getClassDetails(classId);
     const { classObj, batches, roster } = data;
 
-    document.getElementById('class-detail-title').innerHTML = `🏫 Lớp: ${classObj.class_name} (${classObj.subject_name}) - 12 Đợt Học`;
+    // Header Info
+    document.getElementById('page-class-title').innerHTML = `🏫 Lớp: ${classObj.class_name} (${classObj.subject_name}) - 12 Đợt Học`;
+    document.getElementById('page-class-meta').textContent = `Giáo viên phụ trách: ${classObj.teacher_name || 'Chưa phân công'} | Học phí gốc: ${Number(classObj.default_fee_rate).toLocaleString('vi-VN')} VNĐ/đợt | Sĩ số: ${roster.filter(r => r.status === 'ACTIVE').length} học sinh`;
 
-    // Render 12 Batches
-    const tbodyBatches = document.getElementById('tbl-class-batches-body');
+    // Tab 1: Render 12 Batches
+    const tbodyBatches = document.getElementById('tbl-page-class-batches-body');
     tbodyBatches.innerHTML = batches.map(b => `
       <tr>
         <td><strong>Đợt ${b.batch_number}</strong></td>
@@ -67,8 +69,8 @@ async function openClassDetailModal(classId) {
       </tr>
     `).join('');
 
-    // Render Roster
-    const tbodyRoster = document.getElementById('tbl-class-roster-body');
+    // Tab 2: Render Roster
+    const tbodyRoster = document.getElementById('tbl-page-class-roster-body');
     tbodyRoster.innerHTML = roster.length > 0 ? roster.map(r => `
       <tr>
         <td>${r.students ? r.students.student_code || r.students.student_id.substring(0, 8) : 'N/A'}</td>
@@ -89,7 +91,8 @@ async function openClassDetailModal(classId) {
       </tr>
     `).join('') : `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Chưa có học sinh nào trong lớp.</td></tr>`;
 
-    openModal('modal-class-detail');
+    // Navigate to Full Page Class Detail
+    navigateToView('class-detail');
   } catch (err) {
     alert('Lỗi lấy chi tiết lớp học: ' + err.message);
   }
@@ -100,8 +103,7 @@ async function withdrawStudent(enrollmentId) {
     try {
       await ApiService.withdrawStudentFromClass(enrollmentId);
       alert('Đã rút học sinh khỏi lớp!');
-      openClassDetailModal(currentSelectedClassId);
-      loadClassesModule();
+      openClassDetailPage(currentSelectedClassId);
     } catch (err) {
       alert('Lỗi rút học sinh: ' + err.message);
     }
@@ -169,10 +171,10 @@ function initClassesEvents() {
     });
   }
 
-  // Add Student to Class Button in Roster Modal
-  const btnAddStudentToClass = document.getElementById('btn-open-add-student-to-class');
-  if (btnAddStudentToClass) {
-    btnAddStudentToClass.addEventListener('click', async () => {
+  // Add Student to Class Button in Roster Page
+  const btnPageAddStudentToClass = document.getElementById('btn-page-add-student-to-class');
+  if (btnPageAddStudentToClass) {
+    btnPageAddStudentToClass.addEventListener('click', async () => {
       if (!currentSelectedClassId) return;
 
       const studentNameOrPhone = prompt('Nhập Họ và Tên hoặc Số điện thoại học sinh cần ghi danh vào lớp này:');
@@ -189,8 +191,7 @@ function initClassesEvents() {
         if (confirm(`Ghi danh học sinh "${selectedStudent.full_name}" (SĐT: ${selectedStudent.phone}) vào lớp này?`)) {
           await ApiService.enrollStudentToClass(currentSelectedClassId, selectedStudent.student_id);
           alert('Ghi danh học sinh thành công!');
-          openClassDetailModal(currentSelectedClassId);
-          loadClassesModule();
+          openClassDetailPage(currentSelectedClassId);
         }
       } catch (err) {
         alert('Lỗi ghi danh học sinh: ' + err.message);

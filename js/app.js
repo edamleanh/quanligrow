@@ -17,10 +17,10 @@ function initApp() {
     });
   });
 
-  // Setup Modal Tabs Click Handlers
-  document.querySelectorAll('.modal-tabs .tab-item').forEach(tab => {
+  // Setup Full Page Detail Tabs Click Handlers
+  document.querySelectorAll('.card .modal-tabs .tab-item').forEach(tab => {
     tab.addEventListener('click', (e) => {
-      const container = tab.closest('.modal-card');
+      const container = tab.closest('.card');
       container.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
       container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
@@ -44,9 +44,15 @@ function initApp() {
 }
 
 function navigateToView(viewName) {
+  // Map detail sub-views to parent sidebar items
+  let parentMenu = viewName;
+  if (viewName === 'student-detail') parentMenu = 'students';
+  if (viewName === 'class-detail') parentMenu = 'classes';
+  if (viewName === 'teacher-detail') parentMenu = 'teachers';
+
   // Update Sidebar Menu Active Class
   document.querySelectorAll('.sidebar-menu .menu-item').forEach(item => {
-    if (item.dataset.view === viewName) {
+    if (item.dataset.view === parentMenu) {
       item.classList.add('active');
     } else {
       item.classList.remove('active');
@@ -58,8 +64,11 @@ function navigateToView(viewName) {
   const titleMap = {
     dashboard: '📊 Thống kê & Tổng quan Trung tâm',
     students: '🎓 Quản lý Hồ Sơ Học sinh',
+    'student-detail': '🎓 Trang Chi Tiết Hồ Sơ Học Sinh',
     classes: '🏫 Quản lý Lớp học & 12 Đợt học',
+    'class-detail': '🏫 Trang Chi Tiết Lớp Học & 12 Đợt',
     teachers: '👨‍🏫 Quản lý Giáo viên & Quyết toán Thù lao',
+    'teacher-detail': '👨‍🏫 Trang Chi Tiết Hồ Sơ Giáo Viên',
     pos: '💵 Thu Tiền (POS) & Xử lý Nợ Lớp Cũ'
   };
   if (titleEl) {
@@ -80,9 +89,12 @@ function navigateToView(viewName) {
   if (viewName === 'students') loadStudentsModule();
   if (viewName === 'classes') loadClassesModule();
   if (viewName === 'teachers') loadTeachersModule();
+  
+  // Scroll window to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Global Modal Helper Functions
+// Global Modal Helper Functions for Creation Forms
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
