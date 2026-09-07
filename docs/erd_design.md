@@ -68,9 +68,11 @@ Dựa trên tài liệu yêu cầu nghiệp vụ [requirements.md](file:///c:/Us
 - **Loại thực thể**: Thực thể mạnh (Strong Entity).
 - **Thuộc tính**:
   - `<u>batch_id</u>` (UUID): Khóa chính.
-  - `batch_name` (VARCHAR): Tên đợt học (vd: `Đợt 1`, `Đợt 2`, `Tháng 09/2026`).
-  - `class_id` (UUID): Khóa ngoại trỏ đến `CLASSES` (Có thể NULL nếu là đợt dùng chung).
+  - `class_id` (UUID): Khóa ngoại trỏ đến `CLASSES` (Mỗi đợt thuộc 1 Lớp học).
+  - `batch_number` (INT): Số thứ tự đợt học (Từ 1 đến 12, CHECK `batch_number BETWEEN 1 AND 12`).
+  - `batch_name` (VARCHAR): Tên đợt học (vd: `Đợt 1`, `Đợt 2`, ..., `Đợt 12`).
   - `fee_rate` (NUMERIC): Học phí quy định của đợt này.
+  - `status` (ENUM): Trạng thái đợt học (`DANG_HOC`, `UPCOMING`, `COMPLETED`). Tự động đặt `DANG_HOC` cho Đợt 1, các đợt sau là `UPCOMING`, cập nhật bằng tay khi chuyển đợt.
 
 ### 1.8. Thực thể `RECEIPTS` (Biên lai Thu tiền Header)
 - **Loại thực thể**: Thực thể mạnh (Strong Entity).

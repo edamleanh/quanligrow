@@ -55,12 +55,15 @@
   - `class_id`: Foreign Key $\to$ `classes(class_id)` ON DELETE CASCADE.
   - **Unique Constraint**: `UNIQUE(student_id, class_id)` (Một học sinh chỉ được ghi danh 1 lần vào 1 lớp).
 
-### 7. `batches` (Đợt học theo Lớp/Trung tâm)
-- **Schema**: `batches(<u>batch_id</u>, batch_name, class_id, fee_rate, created_at)`
+### 7. `batches` (12 Đợt học theo Lớp)
+- **Schema**: `batches(<u>batch_id</u>, class_id, batch_number, batch_name, fee_rate, status, created_at)`
 - **Khoản ràng buộc**:
   - `batch_id`: Primary Key (UUID).
-  - `class_id`: Foreign Key $\to$ `classes(class_id)` ON DELETE CASCADE (Nullable nếu là đợt chung).
+  - `class_id`: Foreign Key $\to$ `classes(class_id)` ON DELETE CASCADE.
+  - `batch_number`: CHECK (`batch_number BETWEEN 1 AND 12`).
   - `fee_rate`: CHECK (`fee_rate >= 0`).
+  - `status`: CHECK (`status IN ('DANG_HOC', 'UPCOMING', 'COMPLETED')`).
+  - **Unique Constraint**: `UNIQUE(class_id, batch_number)` (Mỗi lớp có đúng 12 đợt học số từ 1 đến 12).
 
 ### 8. `receipts` (Biên lai Thu tiền Header)
 - **Schema**: `receipts(<u>receipt_id</u>, receipt_code, receipt_type, manual_receipt_code, student_id, created_by_user_id, total_amount, receipt_date, created_at)`

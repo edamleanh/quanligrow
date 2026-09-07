@@ -64,8 +64,15 @@ Hệ thống phân chia 3 nhóm quyền chính:
   - Gán học sinh vào danh sách lớp học (Mối quan hệ Nhiều - Nhiều giữa Học sinh và Lớp học).
   - Lưu ngày ghi danh (`enrolled_at`).
 - **Đợt học (Batches / Periods)**:
-  - Đợt học được tạo thủ công theo từng lớp hoặc toàn trung tâm (Ví dụ: "Đợt 1", "Đợt 2", "Tháng 09/2026", "Hè 2026").
-  - Một lớp học có nhiều Đợt học theo thời gian (Quan hệ 1 - N giữa Lớp học và Đợt học).
+  - **Tự động khởi tạo 12 Đợt**: Khi tạo mới 1 Lớp học, hệ thống **tự động sinh sẵn 12 Đợt học** (Từ *Đợt 1* đến *Đợt 12*, tương ứng `batch_number` từ 1 đến 12).
+  - **Trạng thái Đợt (`batch_status`)**:
+    - `DANG_HOC` (Đợt hiện tại đang học).
+    - `UPCOMING` (Đợt sắp tới, chưa học).
+    - `COMPLETED` (Đợt đã hoàn thành / kết thúc).
+  - **Quản lý Đợt đang học**:
+    - Mặc định khi khởi tạo lớp, *Đợt 1* sẽ có trạng thái `DANG_HOC`, các đợt từ 2 đến 12 có trạng thái `UPCOMING`.
+    - Khi kết thúc 1 đợt học, người dùng (Admin/Thu ngân) sẽ **cập nhật bằng tay** đợt cũ sang `COMPLETED` và đợt tiếp theo sang `DANG_HOC`.
+  - **Học phí từng đợt**: Mặc định kế thừa `default_fee_rate` của lớp, cho phép chỉnh sửa tiền đóng riêng cho từng đợt nếu cần.
 
 ---
 

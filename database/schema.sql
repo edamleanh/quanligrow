@@ -13,6 +13,7 @@ CREATE TYPE user_role AS ENUM ('ADMIN', 'CASHIER', 'TEACHER');
 CREATE TYPE student_status AS ENUM ('DANG_HOC', 'DA_NGHI', 'DA_TN');
 CREATE TYPE enrollment_status AS ENUM ('ACTIVE', 'WITHDRAWN');
 CREATE TYPE receipt_type_enum AS ENUM ('IN_MAY', 'NHAP_TAY');
+CREATE TYPE batch_status AS ENUM ('DANG_HOC', 'UPCOMING', 'COMPLETED');
 
 -- -----------------------------------------------------------------------------
 -- 2. TABLES DEFINITION
@@ -87,10 +88,14 @@ CREATE TABLE IF NOT EXISTS enrollments (
 -- 2.7 BATCHES TABLE
 CREATE TABLE IF NOT EXISTS batches (
     batch_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    class_id UUID NOT NULL REFERENCES classes(class_id) ON DELETE CASCADE,
+    batch_number INT NOT NULL CONSTRAINT check_batch_number CHECK (batch_number BETWEEN 1 AND 12),
     batch_name VARCHAR(100) NOT NULL,
-    class_id UUID REFERENCES classes(class_id) ON DELETE CASCADE,
     fee_rate NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CONSTRAINT check_batch_fee CHECK (fee_rate >= 0),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    status batch_status NOT NULL DEFAULT 'UPCOMING',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_class_batch_number UNIQUE (class_id, batch_number)
 );
 
 -- 2.8 RECEIPTS TABLE (Header)
@@ -148,6 +153,7 @@ CREATE TRIGGER trg_users_updated BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUN
 CREATE TRIGGER trg_teachers_updated BEFORE UPDATE ON teachers FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 CREATE TRIGGER trg_students_updated BEFORE UPDATE ON students FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 CREATE TRIGGER trg_classes_updated BEFORE UPDATE ON classes FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+CREATE TRIGGER trg_batches_updated BEFORE UPDATE ON batches FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
 -- 4.2 Auto Calculate Receipt Total Amount Trigger
 CREATE OR REPLACE FUNCTION trigger_update_receipt_total()
@@ -166,6 +172,31 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_receipt_items_total AFTER INSERT OR UPDATE OR DELETE ON receipt_items
 FOR EACH ROW EXECUTE FUNCTION trigger_update_receipt_total();
+
+-- 4.3 Auto Generate 12 Batches per Class Trigger
+CREATE OR REPLACE FUNCTION trigger_auto_create_12_batches()
+RETURNS TRIGGER AS $$
+DECLARE
+    i INT;
+BEGIN
+    FOR i IN 1..12 LOOP
+        INSERT INTO batches (class_id, batch_number, batch_name, fee_rate, status)
+        VALUES (
+            NEW.class_id,
+            i,
+            'Đợt ' || i,
+            NEW.default_fee_rate,
+            CASE WHEN i = 1 THEN 'DANG_HOC'::batch_status ELSE 'UPCOMING'::batch_status END
+        )
+        ON CONFLICT (class_id, batch_number) DO NOTHING;
+    END LOOP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_classes_after_insert_create_batches
+AFTER INSERT ON classes
+FOR EACH ROW EXECUTE FUNCTION trigger_auto_create_12_batches();
 
 -- -----------------------------------------------------------------------------
 -- 5. REPORTING & DEBT VIEWS
