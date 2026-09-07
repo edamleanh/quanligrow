@@ -1,194 +1,158 @@
-# BÁO CÁO THIẾT KẾ SƠ ĐỒ ERD (CONCEPTUAL DATABASE DESIGN)
-## DỰ ÁN: EDUMANAGER V2 (QUẢN LÝ TRUNG TÂM DẠY THÊM)
+# TÀI LIỆU THIẾT KẾ SƠ ĐỒ THỰC THỂ NGUYÊN THỂ (CONCEPTUAL ERD SPECIFICATION)
+## DỰ ÁN: HỆ THỐNG QUẢN LÝ TRUNG TÂM DẠY THÊM (EDUMANAGER V2)
 
 ---
 
-## 1. PHÂN TÍCH CÁC THỰC THỂ (ENTITIES) & THUỘC TÍNH (ATTRIBUTES)
+## 1. PHÂN TÍCH THỰC THỂ & THUỘC TÍNH (ENTITIES & ATTRIBUTES ANALYSIS)
 
-Dựa trên tài liệu yêu cầu nghiệp vụ [requirements.md](file:///c:/Users/ACER/Desktop/grow/requirements.md), hệ thống bao gồm 9 thực thể chính:
+Căn cứ theo tài liệu Yêu cầu Nghiệp vụ [requirements.md](file:///c:/Users/ACER/Desktop/grow/requirements.md), hệ thống bao gồm các Tập thực thể (Entity Sets) và Tập thuộc tính (Attribute Sets) chuẩn học thuật sau:
 
-### 1.1. Thực thể `USERS` (Người dùng hệ thống)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>user_id</u>` (UUID): Khóa chính.
-  - `username` (VARCHAR): Tên đăng nhập (Duy nhất - UNIQUE).
-  - `password_hash` (VARCHAR): Mật khẩu đã mã hóa.
-  - `full_name` (VARCHAR): Họ và tên người dùng.
-  - `role` (ENUM): Vai trò truy cập (`ADMIN`, `CASHIER`, `TEACHER`).
-  - `created_at` (TIMESTAMP): Thời gian tạo tài khoản.
+### 1.1. Thực Thể Mạnh (Strong Entities)
 
-### 1.2. Thực thể `SUBJECTS` (Danh mục Môn học)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>subject_id</u>` (SERIAL/INT): Khóa chính.
-  - `subject_code` (VARCHAR): Mã môn học (vd: `TOAN`, `VAN`, `LY`, `HOA`, `AV`, `GVNN`).
-  - `subject_name` (VARCHAR): Tên môn học (Duy nhất - UNIQUE).
+1. **`ACADEMIC_YEARS` (Năm Học / Niên Khóa)**:
+   - `academic_year_id` (Khóa chính - Primary Key, Tự động tăng).
+   - `year_name` (Tên niên khóa - Unique, VD: `2025-2026`, `2026-2027`).
+   - `start_date` (Ngày bắt đầu năm học).
+   - `end_date` (Ngày kết thúc năm học).
+   - `is_current` (Đánh dấu năm học hiện tại hoạt động).
 
-### 1.3. Thực thể `TEACHERS` (Giáo viên)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>teacher_id</u>` (UUID): Khóa chính.
-  - `teacher_code` (VARCHAR): Mã giáo viên (Duy nhất - UNIQUE, vd: `GV001`).
-  - `full_name` (VARCHAR): Họ và tên giáo viên.
-  - `phone` (VARCHAR): Số điện thoại (Chỉ lưu 1 SĐT, CHECK định dạng 10-11 số).
-  - `specialization_subject_id` (INT): Khóa ngoại trỏ đến `SUBJECTS`.
+2. **`SUBJECTS` (Môn Học)**:
+   - `subject_id` (Khóa chính - Primary Key, Tự động tăng).
+   - `subject_code` (Mã môn học - Unique, VD: `TOAN`, `AV`, `VAN`).
+   - `subject_name` (Tên môn học - Unique, VD: `Toán`, `Anh Văn`, `Ngữ Văn`).
 
-### 1.4. Thực thể `STUDENTS` (Học sinh)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>student_id</u>` (UUID): Khóa chính.
-  - `student_code` (VARCHAR): Mã học sinh tự động sinh (Duy nhất - UNIQUE, vd: `HS0001`).
-  - `full_name` (VARCHAR): Họ và tên học sinh.
-  - `phone` (VARCHAR): Số điện thoại liên lạc chính (1 SĐT duy nhất).
-  - `grade` (INT): Khối lớp hiện tại (CHECK `grade BETWEEN 1 AND 12`).
-  - `status` (ENUM): Trạng thái học (`DANG_HOC`, `DA_NGHI`, `DA_TN`).
-  - `notes` (TEXT): Ghi chú tự do (hẹn ngày đóng tiền, tình trạng học...).
+3. **`TEACHERS` (Giáo Viên)**:
+   - `teacher_id` (Khóa chính - Primary Key, Định danh duy nhất UUID).
+   - `teacher_code` (Mã giáo viên - Unique, VD: `GV001`, `GV002`).
+   - `full_name` (Họ và tên giáo viên).
+   - `phone` (Số điện thoại - Thuộc tính tùy chọn / Optional).
+   - `specialization_subject_id` (Liên kết môn chuyên môn).
 
-### 1.5. Thực thể `CLASSES` (Lớp học)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>class_id</u>` (UUID): Khóa chính.
-  - `class_name` (VARCHAR): Tên lớp học (vd: `Lớp 6A - Toán`, `Lớp 6A - Văn`).
-  - `academic_year` (VARCHAR): Niên khóa / Năm học (Khóa ngoại trỏ đến `ACADEMIC_YEARS(year_name)`, vd: `2025-2026`).
-  - `grade` (INT): Khối lớp (1 - 12).
-  - `subject_id` (INT): Khóa ngoại trỏ đến `SUBJECTS`.
-  - `teacher_id` (UUID): Khóa ngoại trỏ đến `TEACHERS`.
-  - `default_fee_rate` (NUMERIC): Mức học phí gốc cho 1 đợt học.
-  - `is_active` (BOOLEAN): Trạng thái lớp (Mở/Khóa).
+4. **`STUDENTS` (Học Sinh)**:
+   - `student_id` (Khóa chính - Primary Key, Định danh duy nhất UUID).
+   - `student_code` (Mã học sinh - Unique, VD: `HS0001`).
+   - `full_name` (Họ và tên học sinh).
+   - `phone` (Số điện thoại liên lạc chính của gia đình).
+   - `grade` (Khối học - Nhận giá trị từ Khối 1 đến Khối 12).
+   - `status` (Trạng thái: `DANG_HOC`, `DA_NGHI`, `DA_TN`).
+   - `notes` (Ghi chú học tập / hẹn đóng phí).
 
-### 1.6. Thực thể `ACADEMIC_YEARS` (Năm học / Niên khóa)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>academic_year_id</u>` (SERIAL/INT): Khóa chính.
-  - `year_name` (VARCHAR): Tên năm học (Duy nhất - UNIQUE, vd: `2024-2025`, `2025-2026`, `2026-2027`).
-  - `start_date` (DATE): Ngày bắt đầu năm học.
-  - `end_date` (DATE): Ngày kết thúc năm học.
-  - `is_current` (BOOLEAN): Đang là năm học hiện tại hoạt động.
-  - `created_at` (TIMESTAMP): Thời gian tạo bản ghi.
+5. **`CLASSES` (Lớp Học)**:
+   - `class_id` (Khóa chính - Primary Key, Định danh duy nhất UUID).
+   - `class_name` (Tên lớp học, VD: `Lớp 6A - Toán`).
+   - `grade` (Khối lớp - Từ 1 đến 12).
+   - `academic_year` (Liên kết Niên khóa áp dụng).
+   - `default_fee_rate` (Học phí gốc đơn vị mỗi đợt học).
+   - `is_active` (Trạng thái lớp đang mở / đã khóa).
 
-### 1.7. Thực thể `ENROLLMENTS` (Danh sách Ghi danh Lớp học)
-- **Loại thực thể**: Thực thể trung gian (Junction Entity cho mối quan hệ N-M giữa `STUDENTS` và `CLASSES`).
-- **Thuộc tính**:
-  - `<u>enrollment_id</u>` (UUID): Khóa chính.
-  - `student_id` (UUID): Khóa ngoại trỏ đến `STUDENTS`.
-  - `class_id` (UUID): Khóa ngoại trỏ đến `CLASSES`.
-  - `enrolled_at` (TIMESTAMP): Ngày ghi danh vào lớp.
-  - `status` (ENUM): Trạng thái (`ACTIVE`, `WITHDRAWN`).
+6. **`USERS` (Người Dùng / Phân Quyền)**:
+   - `user_id` (Khóa chính - Primary Key UUID).
+   - `username` (Tên đăng nhập - Unique).
+   - `password_hash` (Mật khẩu đã mã hóa).
+   - `full_name` (Họ tên người dùng).
+   - `role` (Phân quyền nghiệp vụ: `ADMIN`, `CASHIER`, `TEACHER`).
 
-### 1.7. Thực thể `BATCHES` (Đợt học)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>batch_id</u>` (UUID): Khóa chính.
-  - `class_id` (UUID): Khóa ngoại trỏ đến `CLASSES` (Mỗi đợt thuộc 1 Lớp học).
-  - `batch_number` (INT): Số thứ tự đợt học (Từ 1 đến 12, CHECK `batch_number BETWEEN 1 AND 12`).
-  - `batch_name` (VARCHAR): Tên đợt học (vd: `Đợt 1`, `Đợt 2`, ..., `Đợt 12`).
-  - `fee_rate` (NUMERIC): Học phí quy định của đợt này.
-  - `status` (ENUM): Trạng thái đợt học (`DANG_HOC`, `UPCOMING`, `COMPLETED`). Tự động đặt `DANG_HOC` cho Đợt 1, các đợt sau là `UPCOMING`, cập nhật bằng tay khi chuyển đợt.
-
-### 1.8. Thực thể `RECEIPTS` (Biên lai Thu tiền Header)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>receipt_id</u>` (UUID): Khóa chính.
-  - `receipt_code` (VARCHAR): Mã biên lai hệ thống (Duy nhất - UNIQUE, vd: `REC-2026-0001`).
-  - `receipt_type` (ENUM): Loại biên lai (`IN_MAY`, `NHAP_TAY`).
-  - `manual_receipt_code` (VARCHAR): Số biên lai tay / Mã tham chiếu (Dành cho loại `NHAP_TAY`).
-  - `student_id` (UUID): Khóa ngoại trỏ đến `STUDENTS`.
-  - `created_by_user_id` (UUID): Khóa ngoại trỏ đến `USERS` (Người lập).
-  - `receipt_date` (TIMESTAMP): Ngày giờ lập biên lai.
-  - `total_amount` (NUMERIC): Tổng tiền thực thu của biên lai.
-
-### 1.9. Thực thể `RECEIPT_ITEMS` (Chi tiết từng Dòng Thanh toán Biên lai)
-- **Loại thực thể**: Thực thể yếu (Weak Entity thuộc `RECEIPTS`).
-- **Thuộc tính**:
-  - `<u>item_id</u>` (UUID): Khóa chính.
-  - `receipt_id` (UUID): Khóa ngoại trỏ đến `RECEIPTS`.
-  - `class_id` (UUID): Khóa ngoại trỏ đến `CLASSES`.
-  - `batch_id` (UUID): Khóa ngoại trỏ đến `BATCHES`.
-  - `amount_paid` (NUMERIC): Số tiền thực thu của mục này.
-  - `item_note` (VARCHAR): Ghi chú dòng.
-
-### 1.10. Thực thể `CLASS_TRANSFERS` (Lịch sử Chuyển Lớp)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>transfer_id</u>` (UUID): Khóa chính.
-  - `student_id` (UUID): Khóa ngoại trỏ đến `STUDENTS`.
-  - `from_class_id` (UUID): Khóa ngoại trỏ đến `CLASSES` (Lớp cũ).
-  - `to_class_id` (UUID): Khóa ngoại trỏ đến `CLASSES` (Lớp mới).
-  - `transfer_date` (TIMESTAMP): Ngày thực hiện chuyển lớp.
-  - `effective_batch_number` (INT): Số thứ tự đợt học bắt đầu áp dụng ở lớp mới.
-  - `reason` (TEXT): Lý do chuyển lớp.
-  - `created_by_user_id` (UUID): Khóa ngoại trỏ đến `USERS`.
-
-### 1.11. Thực thể `CLASS_TEACHER_ASSIGNMENTS` (Phân công Giáo viên theo Đợt)
-- **Loại thực thể**: Thực thể mạnh (Strong Entity).
-- **Thuộc tính**:
-  - `<u>assignment_id</u>` (UUID): Khóa chính.
-  - `class_id` (UUID): Khóa ngoại trỏ đến `CLASSES`.
-  - `batch_id` (UUID): Khóa ngoại trỏ đến `BATCHES`.
-  - `teacher_id` (UUID): Khóa ngoại trỏ đến `TEACHERS`.
-  - `assigned_at` (TIMESTAMP): Ngày phân công.
-  - `note` (TEXT): Ghi chú phân công.
+7. **`RECEIPTS` (Biên Lai Thu Tiền Header)**:
+   - `receipt_id` (Khóa chính - Primary Key UUID).
+   - `receipt_code` (Mã biên lai duy nhất - Unique, VD: `BL-2026-001`).
+   - `receipt_type` (Loại biên lai: `IN_MAY` hoặc `NHAP_TAY`).
+   - `manual_receipt_code` (Mã biên lai cuống sổ tay bổ sung).
+   - `total_amount` (Tổng tiền thực thu của toàn biên lai).
+   - `receipt_date` (Ngày và giờ lập biên lai chính xác đến từng giây).
 
 ---
 
-## 2. SƠ ĐỒ ERD (ENTITY-RELATIONSHIP DIAGRAM)
+### 1.2. Thực Thể Yếu (Weak Entities)
+
+1. **`BATCHES` (12 Đợt Học Theo Lớp)**:
+   - Thực thể yếu phụ thuộc sự tồn tại của Lớp học (`CLASSES`).
+   - Khóa bán phần (Partial Key / Discriminator): `batch_number` (Số đợt từ 1 đến 12).
+   - `batch_name` (Tên đợt học, VD: `Đợt 1`, `Đợt 2`).
+   - `fee_rate` (Mức học phí riêng của đợt).
+   - `status` (Trạng thái đợt: `DANG_HOC`, `UPCOMING`, `COMPLETED`).
+   - `teacher_id` (Giáo viên phụ trách riêng của đợt nếu có thay đổi).
+
+2. **`RECEIPT_ITEMS` (Chi Tiết Mục Đóng Biên Lai)**:
+   - Thực thể yếu phụ thuộc vào Biên lai thu tiền (`RECEIPTS`).
+   - Khóa bán phần: Kết hợp `(class_id, batch_id)`.
+   - `amount_paid` (Số tiền thực đóng của đợt học cụ thể).
+   - `item_note` (Ghi chú dòng thu).
+
+---
+
+### 1.3. Mối Quan Hệ Nghiệp Vụ (Relationships & Cardinality Ratios)
+
+1. **`ACADEMIC_YEARS` — `CLASSES` (1:N)**: Một Niên khóa có nhiều Lớp học (`1-N`). Tham gia toàn phần ở phía Lớp học.
+2. **`SUBJECTS` — `CLASSES` (1:N)**: Một Môn học áp dụng cho nhiều Lớp học (`1-N`).
+3. **`TEACHERS` — `CLASSES` (1:N)**: Một Giáo viên phụ trách chính nhiều Lớp học (`1-N`).
+4. **`STUDENTS` — `CLASSES` (N:M)**: Học sinh ghi danh vào nhiều Lớp học và một Lớp học chứa nhiều Học sinh (Quan hệ Nhiều - Nhiều `N-M`, thể hiện qua Thực thể Trung gian `ENROLLMENTS`).
+5. **`CLASSES` — `BATCHES` (1:N)**: Một Lớp học có đúng 12 Đợt học (Quan hệ Định danh Thực thể Yếu `1-N`).
+6. **`TEACHERS` — `BATCHES` (1:N)**: Một Giáo viên có thể được phân công phụ trách nhiều Đợt học riêng biệt (`1-N`).
+7. **`STUDENTS` — `RECEIPTS` (1:N)**: Một Học sinh sở hữu nhiều Biên lai thu tiền (`1-N`).
+8. **`USERS` — `RECEIPTS` (1:N)**: Một Người dùng (Thu ngân/Admin) lập nhiều Biên lai thu tiền (`1-N`).
+9. **`RECEIPTS` — `RECEIPT_ITEMS` (1:N)**: Một Biên lai chứa nhiều Chi tiết mục đóng (`1-N`).
+
+---
+
+## 2. SƠ ĐỒ ERD CẤU TRÚC NGUYÊN THỂ (CONCEPTUAL ERD DIAGRAM)
 
 ```mermaid
 erDiagram
-    USERS ||--o{ RECEIPTS : "lập (creates)"
-    SUBJECTS ||--o{ TEACHERS : "chuyên môn (specializes in)"
-    SUBJECTS ||--o{ CLASSES : "môn học (belongs to subject)"
-    TEACHERS ||--o{ CLASSES : "giảng dạy (teaches)"
-    ACADEMIC_YEARS ||--o{ CLASSES : "áp dụng cho (applies to)"
+    ACADEMIC_YEARS ||--o{ CLASSES : "mở cho"
+    SUBJECTS ||--o{ CLASSES : "thuộc môn"
+    SUBJECTS ||--o{ TEACHERS : "chuyên môn"
+    TEACHERS ||--o{ CLASSES : "phụ trách chính"
+    TEACHERS ||--o{ BATCHES : "dạy đợt"
     
-    STUDENTS ||--o{ ENROLLMENTS : "đăng ký (enrolls in)"
-    CLASSES ||--o{ ENROLLMENTS : "chứa (contains)"
+    STUDENTS ||--o{ ENROLLMENTS : "tham gia"
+    CLASSES ||--o{ ENROLLMENTS : "chứa"
     
-    CLASSES ||--o{ BATCHES : "có đợt học (has batches)"
-    STUDENTS ||--o{ RECEIPTS : "thanh toán (pays for)"
+    CLASSES ||--1{ BATCHES : "sinh 12 đợt"
     
-    RECEIPTS ||--|{ RECEIPT_ITEMS : "bao gồm (contains line items)"
-    CLASSES ||--o{ RECEIPT_ITEMS : "được đóng phí cho (paid for class)"
-    BATCHES ||--o{ RECEIPT_ITEMS : "được đóng phí cho đợt (paid for batch)"
+    USERS ||--o{ RECEIPTS : "lập biên lai"
+    STUDENTS ||--o{ RECEIPTS : "thanh toán"
+    
+    RECEIPTS ||--1{ RECEIPT_ITEMS : "gồm các mục"
+    CLASSES ||--o{ RECEIPT_ITEMS : "đóng cho lớp"
+    BATCHES ||--o{ RECEIPT_ITEMS : "đóng cho đợt"
 
     ACADEMIC_YEARS {
         int academic_year_id PK
-        string year_name UK "2025-2026"
+        string year_name UK
         boolean is_current
-    }
-
-    USERS {
-        uuid user_id PK
-        string username
-        string role "ADMIN | CASHIER | TEACHER"
     }
 
     SUBJECTS {
         int subject_id PK
-        string subject_name
+        string subject_code UK
+        string subject_name UK
     }
 
     TEACHERS {
         uuid teacher_id PK
-        string teacher_code
+        string teacher_code UK
         string full_name
         string phone
+        int specialization_subject_id FK
     }
 
     STUDENTS {
         uuid student_id PK
-        string student_code
+        string student_code UK
         string full_name
         string phone
-        int grade "1-12"
-        string status "DANG_HOC | DA_NGHI"
+        int grade
+        string status
     }
 
     CLASSES {
         uuid class_id PK
         string class_name
+        string academic_year FK
         int grade
-        numeric default_fee_rate
+        int subject_id FK
+        uuid teacher_id FK
+        decimal default_fee_rate
         boolean is_active
     }
 
@@ -196,22 +160,35 @@ erDiagram
         uuid enrollment_id PK
         uuid student_id FK
         uuid class_id FK
-        datetime enrolled_at
+        timestamp enrolled_at
+        string status
     }
 
     BATCHES {
         uuid batch_id PK
-        string batch_name
         uuid class_id FK
-        numeric fee_rate
+        int batch_number
+        string batch_name
+        decimal fee_rate
+        string status
+        uuid teacher_id FK
+    }
+
+    USERS {
+        uuid user_id PK
+        string username UK
+        string full_name
+        string role
     }
 
     RECEIPTS {
         uuid receipt_id PK
-        string receipt_code
-        string receipt_type "IN_MAY | NHAP_TAY"
-        string manual_receipt_code
-        numeric total_amount
+        string receipt_code UK
+        string receipt_type
+        uuid student_id FK
+        uuid created_by_user_id FK
+        decimal total_amount
+        timestamp receipt_date
     }
 
     RECEIPT_ITEMS {
@@ -219,19 +196,20 @@ erDiagram
         uuid receipt_id FK
         uuid class_id FK
         uuid batch_id FK
-        numeric amount_paid
+        decimal amount_paid
     }
 ```
 
 ---
 
-## 3. PHÂN TÍCH MỐI QUAN HỆ & BẢN SỐ (CARDINALITY RATIOS)
+## 3. NGUYÊN TẮC RÀNG BUỘC TOÀN VẸN & BẢN SỐ (PARTICIPATION CONSTRAINTS)
 
-1. `SUBJECTS` - `TEACHERS`: **1 - N** (Một môn học có nhiều giáo viên chuyên môn; Một giáo viên có 1 môn chuyên môn chính).
-2. `TEACHERS` - `CLASSES`: **1 - N** (Một giáo viên dạy nhiều lớp; Mỗi lớp có đúng 1 giáo viên phụ trách).
-3. `SUBJECTS` - `CLASSES`: **1 - N** (Một môn học có nhiều lớp; Mỗi lớp thuộc đúng 1 môn học).
-4. `STUDENTS` - `CLASSES`: **N - M** (Một học sinh có thể ghi danh vào nhiều lớp khác nhau; Một lớp chứa nhiều học sinh). Chuyển thành 2 mối quan hệ 1-N thông qua bảng trung gian `ENROLLMENTS`.
-5. `CLASSES` - `BATCHES`: **1 - N** (Một lớp học trải qua nhiều đợt học theo thời gian).
-6. `STUDENTS` - `RECEIPTS`: **1 - N** (Một học sinh có nhiều biên lai thanh toán trong lịch sử).
-7. `USERS` - `RECEIPTS`: **1 - N** (Một nhân viên/thu ngân lập nhiều biên lai).
-8. `RECEIPTS` - `RECEIPT_ITEMS`: **1 - N (Total Participation)** (Một biên lai chứa ít nhất 1 hoặc nhiều dòng thanh toán chi tiết).
+1. **Ràng buộc Tham gia Toàn phần (Total Participation)**:
+   - Mọi `BATCHES` phải thuộc về 1 `CLASSES` duy nhất (Phụ thuộc tồn tại).
+   - Mọi `RECEIPT_ITEMS` phải gắn liền với 1 `RECEIPTS` cụ thể.
+   - Mọi `CLASSES` phải gắn liền với 1 `ACADEMIC_YEARS` và 1 `SUBJECTS`.
+
+2. **Ràng buộc Duy nhất (Uniqueness Rules)**:
+   - Mỗi Lớp học có đúng 12 Đợt học duy nhất được đánh số từ 1 đến 12 (`UNIQUE(class_id, batch_number)`).
+   - Mỗi Học sinh chỉ ghi danh active 1 lần trên 1 Lớp học trong niên khóa (`UNIQUE(student_id, class_id)`).
+   - Mỗi dòng mục đóng trên Biên lai chỉ thu tiền cho đúng 1 Đợt của 1 Lớp học (`UNIQUE(receipt_id, class_id, batch_id)`).
