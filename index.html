@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trung Tâm Ngoại Ngữ Grow - EduManager V2</title>
+    <meta name="description" content="Hệ thống Quản lý Học sinh, Lớp học & Thu học phí Trung Tâm Ngoại Ngữ Grow">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+    <!-- Header Navigation Bar -->
+    <header class="app-header">
+        <div class="top-bar">
+            <!-- Brand Logo & Title -->
+            <div class="brand-container">
+                <div class="brand-logo">G</div>
+                <div>
+                    <h1 class="brand-title">Trung Tâm Ngoại Ngữ Grow</h1>
+                    <p class="brand-subtitle">Hệ thống Quản lý Học vụ & Thu Học phí (EduManager V2)</p>
+                </div>
+            </div>
+
+            <!-- Quick 1-Click Role Switcher Bar -->
+            <div class="role-switcher-bar">
+                <button class="role-btn" data-role="ADMIN">
+                    <span>👑</span> Admin
+                </button>
+                <button class="role-btn active" data-role="CASHIER">
+                    <span>💵</span> Thu Ngân
+                </button>
+                <button class="role-btn" data-role="TEACHER">
+                    <span>👨‍🏫</span> Giáo Viên
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Views Container -->
+    <main class="main-container">
+
+        <!-- ===================================================================
+             1. CASHIER POS VIEW (#view-cashier)
+             =================================================================== -->
+        <section id="view-cashier" style="display: block;">
+            <div class="page-header">
+                <h2 class="page-title">💵 Thu Tiền Học Phí (Màn Hình POS)</h2>
+                <span class="badge badge-dang-hoc">Quyền Thu Ngân</span>
+            </div>
+
+            <!-- Student Search Component -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="pos-search-box">
+                    <span class="pos-search-icon">🔍</span>
+                    <input type="text" id="pos-student-search" class="form-input pos-search-input" 
+                           placeholder="Nhập Tên học sinh, Mã HS (HS00001) hoặc Số điện thoại để tìm kiếm..." autocomplete="off">
+                    <div id="pos-search-dropdown" class="search-results-dropdown"></div>
+                </div>
+            </div>
+
+            <!-- Student Selected Info Header -->
+            <div id="pos-student-header" style="display: none; margin-bottom: 1.5rem;"></div>
+
+            <!-- Main POS Layout: Grid of Enrolled Classes + Receipt Summary Sidebar -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+                
+                <!-- Left: Enrolled Classes & 12 Batches Selector -->
+                <div>
+                    <h3 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1.1rem;">Lớp Học & 12 Đợt Học Đang Ghi Danh</h3>
+                    <div id="pos-classes-container">
+                        <div class="card" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                            👈 Vui lòng tìm và chọn Học sinh để bắt đầu lập biên lai thu tiền.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Receipt Summary & Submit Sidebar -->
+                <div>
+                    <div class="card" style="position: sticky; top: 80px;">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                            🧾 Thông Tin Biên Lai
+                        </h3>
+
+                        <!-- Receipt Type Select -->
+                        <div class="form-group">
+                            <label class="form-label">Loại Biên Lai</label>
+                            <select id="pos-receipt-type" class="form-select" onchange="document.getElementById('manual-code-wrapper').style.display = this.value === 'NHAP_TAY' ? 'block' : 'none'">
+                                <option value="IN_MAY">In máy trực tiếp (IN_MAY)</option>
+                                <option value="NHAP_TAY">Nhập bổ sung cuống tay (NHAP_TAY)</option>
+                            </select>
+                        </div>
+
+                        <!-- Manual Code Field (Hidden by default) -->
+                        <div id="manual-code-wrapper" class="form-group" style="display: none;">
+                            <label class="form-label">Số Biên Lai Tay / Mã Tham Chiếu</label>
+                            <input type="text" id="pos-manual-code" class="form-input" placeholder="Ví dụ: ST-2026-88">
+                        </div>
+
+                        <!-- Line Items List & Total -->
+                        <div id="pos-receipt-summary" style="margin-bottom: 1.25rem;">
+                            <p style="color: var(--text-muted); text-align: center;">Chưa chọn đợt đóng phí nào.</p>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button id="btn-submit-receipt" class="btn btn-primary btn-lg" style="width: 100%;">
+                            💾 Lưu & In Biên Lai Thu Tiền
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ===================================================================
+             2. ADMIN DASHBOARD VIEW (#view-admin)
+             =================================================================== -->
+        <section id="view-admin" style="display: none;">
+            <div class="page-header">
+                <h2 class="page-title">👑 Dashboard Quản Trị & Doanh Thu</h2>
+                <span class="badge badge-completed">Quyền Admin</span>
+            </div>
+
+            <!-- Key Metric Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Doanh Thu Hôm Nay</div>
+                        <div id="stat-today-revenue" class="stat-val" style="color: var(--primary);">0 VNĐ</div>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-emerald">💵</div>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Tổng Học Sinh CSDL</div>
+                        <div id="stat-total-students" class="stat-val">1,423</div>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-blue">🎓</div>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Tổng Số Lớp Học</div>
+                        <div id="stat-total-classes" class="stat-val">77</div>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-amber">🏫</div>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Đợt Đang Học</div>
+                        <div id="stat-active-batches" class="stat-val">77</div>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-emerald">📅</div>
+                </div>
+            </div>
+
+            <!-- Unpaid Classes Ranking & Batch Status Manager Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+                
+                <!-- Left: Classes with Highest Unpaid Completed Batches -->
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span>⚠️ Top Lớp Nợ Đợt Đã Học Xong Nhiều Nhất</span>
+                        <span class="badge badge-completed">Cần Nhắc Phí</span>
+                    </h3>
+                    <div id="dashboard-unpaid-classes-list">
+                        <p style="color: var(--text-muted); text-align: center;">Đang tải dữ liệu báo cáo...</p>
+                    </div>
+                </div>
+
+                <!-- Right: Batches Status Manager -->
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1.1rem;">
+                        ⚙️ Quản Lý Chuyển Đợt 12 Học Phí
+                    </h3>
+                    <div class="form-group">
+                        <label class="form-label">Chọn Lớp Học Cần Chuyển Đợt</label>
+                        <select id="batch-mgr-class-select" class="form-select"></select>
+                    </div>
+                    <div id="batch-mgr-list">
+                        <p style="color: var(--text-muted); text-align: center;">Vui lòng chọn lớp học.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ===================================================================
+             3. TEACHER CLASS VIEW (#view-teacher)
+             =================================================================== -->
+        <section id="view-teacher" style="display: none;">
+            <div class="page-header">
+                <h2 class="page-title">👨‍🏫 Danh Sách Lớp Học Phụ Trách</h2>
+                <span class="badge badge-tn">Quyền Giáo Viên</span>
+            </div>
+
+            <div id="teacher-classes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+                <p style="color: var(--text-muted); text-align: center;">Đang tải danh sách lớp...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Xem Trước & In Biên Lai -->
+    <div id="modal-print-receipt" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">🖨️ In Biên Lai Thu Tiền</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div id="receipt-print-area" style="margin-bottom: 1.25rem;"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button class="btn btn-secondary modal-close">Đóng</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ In Phiếu Thu (Print)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ES Module App Script -->
+    <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
