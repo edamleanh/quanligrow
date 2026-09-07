@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. ENUM TYPES
 -- -----------------------------------------------------------------------------
 CREATE TYPE user_role AS ENUM ('ADMIN', 'CASHIER', 'TEACHER');
-CREATE TYPE student_status AS ENUM ('DANG_HOC', 'DA_NGHI');
+CREATE TYPE student_status AS ENUM ('DANG_HOC', 'DA_NGHI', 'DA_TN');
 CREATE TYPE enrollment_status AS ENUM ('ACTIVE', 'WITHDRAWN');
 CREATE TYPE receipt_type_enum AS ENUM ('IN_MAY', 'NHAP_TAY');
 

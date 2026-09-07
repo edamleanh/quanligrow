@@ -51,7 +51,7 @@ Hệ thống phân chia 3 nhóm quyền chính:
   - Họ và Tên (`full_name`): Bắt buộc.
   - Số điện thoại (`phone`): Lưu **1 SĐT duy nhất** (SĐT liên lạc chính của gia đình/học sinh).
   - Khối hiện tại (`grade`): Từ 1 đến 12.
-  - Trạng thái học (`status`): `DANG_HOC` (Đang học) hoặc `DA_NGHI` (Đã nghỉ).
+  - Trạng thái: `DANG_HOC` (Đang học), `DA_NGHI` (Đã nghỉ) hoặc `DA_TN` (Đã tốt nghiệp - học xong lớp 12, vd: `12N26`).
   - Ghi chú (`notes`): Văn bản tự do (hẹn ngày đóng tiền, tình trạng học tập, lưu ý đặc biệt...).
 
 ### 2.4. Quản lý Lớp học & Đợt học (Classes & Batches)

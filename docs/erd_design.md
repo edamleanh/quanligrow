@@ -41,7 +41,7 @@ Dựa trên tài liệu yêu cầu nghiệp vụ [requirements.md](file:///c:/Us
   - `full_name` (VARCHAR): Họ và tên học sinh.
   - `phone` (VARCHAR): Số điện thoại liên lạc chính (1 SĐT duy nhất).
   - `grade` (INT): Khối lớp hiện tại (CHECK `grade BETWEEN 1 AND 12`).
-  - `status` (ENUM): Trạng thái học (`DANG_HOC`, `DA_NGHI`).
+  - `status` (ENUM): Trạng thái học (`DANG_HOC`, `DA_NGHI`, `DA_TN`).
   - `notes` (TEXT): Ghi chú tự do (hẹn ngày đóng tiền, tình trạng học...).
 
 ### 1.5. Thực thể `CLASSES` (Lớp học)

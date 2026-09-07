@@ -36,7 +36,7 @@
   - `student_code`: Unique, NOT NULL (vd: `HS0001`).
   - `phone`: Single primary contact phone, CHECK (`phone ~ '^[0-9]{10,11}$'`).
   - `grade`: CHECK (`grade BETWEEN 1 AND 12`).
-  - `status`: CHECK (`status IN ('DANG_HOC', 'DA_NGHI')`).
+  - `status`: CHECK (`status IN ('DANG_HOC', 'DA_NGHI', 'DA_TN')`).
 
 ### 5. `classes` (Danh mục Lớp học)
 - **Schema**: `classes(<u>class_id</u>, class_name, grade, subject_id, teacher_id, default_fee_rate, is_active, created_at)`

@@ -24,10 +24,14 @@ SELECT
         ELSE '090' || LPAD(ROW_NUMBER() OVER (ORDER BY "id")::text, 7, '0')
     END AS phone,
     CASE 
+        WHEN "LỚP" LIKE '%12N%' OR "LỚP" LIKE '%TN%' THEN 12
         WHEN "LỚP" ~ '^[0-9]+$' AND "LỚP"::INT BETWEEN 1 AND 12 THEN "LỚP"::INT
         ELSE 6
     END AS grade,
-    'DANG_HOC'::student_status AS status,
+    CASE 
+        WHEN "LỚP" LIKE '%12N%' OR "LỚP" LIKE '%TN%' OR "Ghi chú" LIKE '%TN%' OR "Ghi chú" LIKE '%TỐT NGHIỆP%' THEN 'DA_TN'::student_status
+        ELSE 'DANG_HOC'::student_status
+    END AS status,
     "Ghi chú" AS notes
 FROM ds_tong
 WHERE ("STT"::text != '99999' OR "STT" IS NULL)
