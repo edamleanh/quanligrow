@@ -6,9 +6,10 @@
 ## 1. TỔNG QUAN HỆ THỐNG (SYSTEM OVERVIEW)
 
 ### 1.1. Mục tiêu Hệ thống
-Xây dựng ứng dụng Web quản trị nội bộ dành cho Trung tâm Dạy thêm, tập trung vào 2 trụ cột nghiệp vụ:
-1. **Quản lý Học vụ**: Quản lý học sinh, giáo viên, phân công lớp học, danh sách ghi danh.
-2. **Quản lý Tài chính & Công nợ**: Thu học phí theo đợt linh hoạt, lập biên lai in máy / nhập tay, theo dõi nợ phí và nhắc phí.
+Xây dựng ứng dụng Web quản trị nội bộ dành cho Trung tâm Dạy thêm, tập trung vào 3 trụ cột nghiệp vụ:
+1. **Quản lý Phân theo Niên khóa / Năm học**: Quản lý dữ liệu phân chia rõ ràng theo từng Năm học (Ví dụ: `2025-2026`, `2026-2027`...), hỗ trợ chuyển giao niên khóa, mở lớp theo năm và lưu trữ lịch sử học kỳ/năm học.
+2. **Quản lý Học vụ**: Quản lý học sinh, giáo viên, phân công lớp học, danh sách ghi danh theo từng năm học.
+3. **Quản lý Tài chính & Công nợ**: Thu học phí theo đợt linh hoạt, lập biên lai in máy / nhập tay, theo dõi nợ phí và báo cáo doanh thu theo từng niên khóa.
 
 ### 1.2. Hình thức Thanh toán
 - Mặc định: **Tiền mặt (CASH)**.
@@ -33,7 +34,11 @@ Hệ thống phân chia 3 nhóm quyền chính:
 
 ## 2. YÊU CẦU NGHIỆP VỤ & QUẢN LÝ THỰC THỂ (ENTITIES & BUSINESS RULES)
 
-### 2.1. Danh mục Hệ thống (System Catalogs)
+### 2.1. Danh mục Hệ thống & Quản lý Năm học (System Catalogs & Academic Years)
+- **Quản lý Phân theo Năm học (Academic Years)**:
+  - Hệ thống quản lý toàn bộ dữ liệu (Lớp học, Ghi danh, Biên lai, Công nợ) phân chia rõ ràng theo từng **Năm học / Niên khóa** (Ví dụ: `2025-2026`, `2026-2027`, `2027-2028`...).
+  - **Bộ lọc Năm học Toàn hệ thống**: Trên giao diện Admin & Thu ngân có thanh chọn Năm học hiện tại. Mặc định hiển thị dữ liệu của năm học hoạt động (ví dụ: `2025-2026`), khi chuyển năm học hệ thống sẽ tự động tải các lớp học và báo cáo tương ứng với niên khóa đó.
+  - **Chuyển giao Niên khóa (Year-End Promotion)**: Khi sang năm học mới (ví dụ từ `2025-2026` lên `2026-2027`), Admin có thể mở danh mục Lớp học cho Năm học mới và kết chuyển/tốt nghiệp học sinh theo khối.
 - **Khối (Grades)**: Cố định từ **Khối 1 đến Khối 12** (CHECK `grade BETWEEN 1 AND 12`).
 - **Môn học & Mức phí mặc định**:
   - Môn thông thường (`Toán`, `Lý`, `Hóa`, `Anh Văn`, `GVNN`): Mức học phí mặc định **350.000 VNĐ / đợt**.
@@ -56,17 +61,18 @@ Hệ thống phân chia 3 nhóm quyền chính:
   - Trạng thái: `DANG_HOC` (Đang học), `DA_NGHI` (Đã nghỉ) hoặc `DA_TN` (Đã tốt nghiệp - học xong lớp 12, vd: `12N26`).
   - Ghi chú (`notes`): Văn bản tự do (hẹn ngày đóng tiền, tình trạng học tập, lưu ý đặc biệt...).
 
-### 2.4. Quản lý Lớp học & Đợt học (Classes & Batches)
-- **Mô hình Lớp học (Class Entity)**:
-  - Tên lớp gắn chặt với Khối và Môn học (Ví dụ: *Lớp 6A - Toán* và *Lớp 6A - Văn* là **2 thực thể độc lập hoàn toàn**, có danh sách học sinh ghi danh riêng biệt).
+### 2.4. Quản lý Lớp học & Đợt học theo Năm học (Classes & Batches per Academic Year)
+- **Mô hình Lớp học theo Năm học (Class Entity)**:
+  - Mỗi Lớp học gắn liền với một **Năm học cụ thể** (Trường `academic_year`, vd: `2025-2026`, `2026-2027`...).
+  - Tên lớp gắn chặt với Khối, Môn học và Năm học (Ví dụ: *Lớp 6A - Toán (2025-2026)* và *Lớp 6A - Toán (2026-2027)* là 2 lớp học của 2 niên khóa khác nhau).
   - Phân công: Mỗi lớp do **1 Giáo viên phụ trách**.
   - Đơn giá học phí gốc (`default_fee_rate`): Giá cố định cho 1 đợt học (Ví dụ: 800.000 VNĐ / đợt).
   - Trạng thái lớp (`is_active`): Đang mở hoặc Đã khóa.
 - **Ghi danh (Enrollment / Class Assignment)**:
-  - Gán học sinh vào danh sách lớp học (Mối quan hệ Nhiều - Nhiều giữa Học sinh và Lớp học).
+  - Gán học sinh vào danh sách lớp học theo từng năm học (Mối quan hệ Nhiều - Nhiều giữa Học sinh và Lớp học).
   - Lưu ngày ghi danh (`enrolled_at`).
 - **Đợt học (Batches / Periods)**:
-  - **Tự động khởi tạo 12 Đợt**: Khi tạo mới 1 Lớp học, hệ thống **tự động sinh sẵn 12 Đợt học** (Từ *Đợt 1* đến *Đợt 12*, tương ứng `batch_number` từ 1 đến 12).
+  - **Tự động khởi tạo 12 Đợt**: Khi tạo mới 1 Lớp học trong năm học, hệ thống **tự động sinh sẵn 12 Đợt học** (Từ *Đợt 1* đến *Đợt 12*, tương ứng `batch_number` từ 1 đến 12).
   - **Trạng thái Đợt (`batch_status`)**:
     - `DANG_HOC` (Đợt hiện tại đang học).
     - `UPCOMING` (Đợt sắp tới, chưa học).
@@ -74,7 +80,7 @@ Hệ thống phân chia 3 nhóm quyền chính:
   - **Quản lý Đợt đang học**:
     - Mặc định khi khởi tạo lớp, *Đợt 1* sẽ có trạng thái `DANG_HOC`, các đợt từ 2 đến 12 có trạng thái `UPCOMING`.
     - Khi kết thúc 1 đợt học, người dùng (Admin/Thu ngân) sẽ **cập nhật bằng tay** đợt cũ sang `COMPLETED` và đợt tiếp theo sang `DANG_HOC`.
-  - **Học phí từng đợt**: Mặc định kế thừa `default_fee_rate` của lớp, cho phép chỉnh sửa tiền đóng riêng cho từng đợt nếu cần.
+  - **Học phí từng đợt**: Mặc định kế thừa `default_fee_rate` của lớp, cho phép chỉnh sửa tiền đóng riêng và tên đợt học cho từng đợt nếu cần.
 
 ### 2.5. Nghiệp vụ Chuyển Lớp giữa chừng & Theo dõi Công nợ Nối tiếp (Student Class Transfers)
 - **Chuyển lớp học giữa chừng**:
