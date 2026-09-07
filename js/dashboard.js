@@ -1,4 +1,4 @@
-// EduManager V2 - Module Thống Kê Analytics Dashboard (100% Real DB Data)
+// EduManager V2 - Module Thống Kê Analytics Dashboard (Ẩn cột Mã Lớp)
 
 async function loadDashboardModule() {
   try {
@@ -13,14 +13,13 @@ async function loadDashboardModule() {
     // Table Unpaid Finished Classes from v_class_details
     const tbody = document.getElementById('tbl-unpaid-classes-body');
     if (stats.unpaidClasses.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Không có lớp nào đã kết thúc còn nợ học phí trong cơ sở dữ liệu.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">Không có lớp nào đã kết thúc còn nợ học phí trong cơ sở dữ liệu.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = stats.unpaidClasses.map(c => `
       <tr>
-        <td><strong>${c.class_id.substring(0, 8)}...</strong></td>
-        <td><strong style="color: var(--primary);">${c.class_name}</strong></td>
+        <td><strong style="color: var(--primary); font-size: 15px;">${c.class_name}</strong></td>
         <td>${c.teacher_name || 'N/A'}</td>
         <td><span class="badge badge-active">${c.enrolled_count} học sinh</span></td>
         <td><strong>${Number(c.default_fee_rate).toLocaleString('vi-VN')} VNĐ</strong></td>

@@ -1,4 +1,4 @@
-// EduManager V2 - Module Quản Lý Giáo Viên & Quyết Toán Payroll (100% Real DB Data)
+// EduManager V2 - Module Quản Lý Giáo Viên & Quyết Toán Payroll (Ẩn cột Mã Lớp)
 
 let currentSelectedTeacherId = null;
 
@@ -52,16 +52,15 @@ async function openTeacherDetailPage(teacherId) {
     document.getElementById('page-teacher-full-name').textContent = teacher.full_name;
     document.getElementById('page-teacher-meta').textContent = `Mã GV: ${teacher.teacher_code} | SĐT: ${teacher.phone || 'N/A'} | Lớp phụ trách: ${classes.length} lớp`;
 
-    // Tab 1: Classes from DB
+    // Tab 1: Classes from DB (Hidden Mã Lớp)
     const tbodyClasses = document.getElementById('tbl-page-teacher-classes-body');
     tbodyClasses.innerHTML = classes.length > 0 ? classes.map(c => `
       <tr>
-        <td>${c.class_id.substring(0, 8)}...</td>
-        <td><strong>${c.class_name}</strong></td>
-        <td>Khối ${c.grade}</td>
+        <td><strong style="color: var(--primary);">${c.class_name}</strong></td>
+        <td><span class="badge" style="background: #f1f5f9; color: #334155;">Khối ${c.grade}</span></td>
         <td><span class="badge badge-active">${c.is_active ? 'Đang Mở' : 'Kết Thúc'}</span></td>
       </tr>
-    `).join('') : `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa được phân công lớp nào trong CSDL.</td></tr>`;
+    `).join('') : `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Chưa được phân công lớp nào trong CSDL.</td></tr>`;
 
     // Tab 2: Payroll Breakdown directly from v_teacher_batch_payroll View in DB
     const tbodyPayroll = document.getElementById('tbl-page-teacher-payroll-body');

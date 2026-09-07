@@ -195,7 +195,7 @@ const ApiService = {
     return true;
   },
 
-  // 3. CLASSES API
+  // 3. CLASSES & BATCHES API
   async getClasses(query = '') {
     let q = dbClient.from('v_class_details').select('*');
     if (query) {
@@ -271,6 +271,17 @@ const ApiService = {
       batches: batches || [],
       roster: roster || []
     };
+  },
+
+  async updateBatch(batchId, updateData) {
+    const { data, error } = await dbClient
+      .from('batches')
+      .update(updateData)
+      .eq('batch_id', batchId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async enrollStudentToClass(classId, studentId) {
@@ -375,7 +386,7 @@ const ApiService = {
     return data;
   },
 
-  // 5. POS API: Grouping Batches by Class for Clear Multi-Class Display
+  // 5. POS API
   async getStudentDebtsAndBatches(studentId) {
     const { data: debtRows, error } = await dbClient
       .from('v_debt_summary')
@@ -390,7 +401,6 @@ const ApiService = {
 
     const rows = debtRows || [];
 
-    // Group rows by class_id
     const classMap = new Map();
     rows.forEach(r => {
       if (!classMap.has(r.class_id)) {

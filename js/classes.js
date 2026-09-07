@@ -1,4 +1,4 @@
-// EduManager V2 - Module Quản Lý Lớp Học (Hỗ trợ Trang Chi Tiết Mới)
+// EduManager V2 - Module Quản Lý Lớp Học & Tự Động Sinh 12 Đợt (Cho phép Đổi Tên Đợt & Học Phí Đợt)
 
 let currentSelectedClassId = null;
 
@@ -20,16 +20,15 @@ function renderClassesTable(classes) {
   if (!tbody) return;
 
   if (classes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Không tìm thấy lớp học nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Không tìm thấy lớp học nào.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = classes.map(c => `
     <tr>
-      <td><strong>${c.class_id.substring(0, 8)}...</strong></td>
-      <td><strong style="color: var(--primary);">${c.class_name}</strong></td>
+      <td><strong style="color: var(--primary); font-size: 15px;">${c.class_name}</strong></td>
       <td>${c.subject_name || 'Môn học'}</td>
-      <td>Khối ${c.grade}</td>
+      <td><span class="badge" style="background: #f1f5f9; color: #334155;">Khối ${c.grade}</span></td>
       <td>${c.teacher_name || 'Chưa phân công'}</td>
       <td><span class="badge badge-active">${c.enrolled_count} học sinh</span></td>
       <td><strong>${Number(c.default_fee_rate).toLocaleString('vi-VN')} VNĐ</strong></td>
@@ -53,18 +52,30 @@ async function openClassDetailPage(classId) {
     document.getElementById('page-class-title').innerHTML = `🏫 Lớp: ${classObj.class_name} (${classObj.subject_name}) - 12 Đợt Học`;
     document.getElementById('page-class-meta').textContent = `Giáo viên phụ trách: ${classObj.teacher_name || 'Chưa phân công'} | Học phí gốc: ${Number(classObj.default_fee_rate).toLocaleString('vi-VN')} VNĐ/đợt | Sĩ số: ${roster.filter(r => r.status === 'ACTIVE').length} học sinh`;
 
-    // Tab 1: Render 12 Batches
+    // Tab 1: Render 12 Batches with Editable Name and Fee Rate
     const tbodyBatches = document.getElementById('tbl-page-class-batches-body');
     tbodyBatches.innerHTML = batches.map(b => `
       <tr>
         <td><strong>Đợt ${b.batch_number}</strong></td>
-        <td>${b.batch_name}</td>
-        <td><strong style="color: var(--primary);">${b.teachers ? b.teachers.full_name : classObj.teacher_name}</strong></td>
-        <td><strong>${Number(b.fee_rate).toLocaleString('vi-VN')} VNĐ</strong></td>
+        <td>
+          <input type="text" id="batch-name-${b.batch_id}" class="form-control-simple" value="${b.batch_name}" style="max-width: 180px; font-weight: 600;">
+        </td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="number" id="batch-fee-${b.batch_id}" class="form-control-simple" value="${b.fee_rate}" step="10000" style="max-width: 140px; font-weight: 700; color: var(--primary);">
+            <span style="font-size: 12px; color: var(--text-secondary);">VNĐ</span>
+          </div>
+        </td>
+        <td><strong style="color: var(--text-primary);">${b.teachers ? b.teachers.full_name : classObj.teacher_name}</strong></td>
         <td>
           ${b.status === 'DANG_HOC' || b.status === 'ACTIVE' ? '<span class="badge badge-active">Đang Học</span>' : ''}
           ${b.status === 'UPCOMING' ? '<span class="badge badge-transferred">Sắp Tới</span>' : ''}
           ${b.status === 'COMPLETED' ? '<span class="badge badge-completed">Đã Xong</span>' : ''}
+        </td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="saveBatchEdit('${b.batch_id}')">
+            <i class="fa-solid fa-save"></i> Lưu Thay Đổi
+          </button>
         </td>
       </tr>
     `).join('');
@@ -95,6 +106,27 @@ async function openClassDetailPage(classId) {
     navigateToView('class-detail');
   } catch (err) {
     alert('Lỗi lấy chi tiết lớp học: ' + err.message);
+  }
+}
+
+async function saveBatchEdit(batchId) {
+  const newName = document.getElementById(`batch-name-${batchId}`).value.trim();
+  const newFee = Number(document.getElementById(`batch-fee-${batchId}`).value);
+
+  if (!newName || isNaN(newFee) || newFee < 0) {
+    alert('Vui lòng nhập Tên Đợt và Học Phí Đợt hợp lệ!');
+    return;
+  }
+
+  try {
+    await ApiService.updateBatch(batchId, {
+      batch_name: newName,
+      fee_rate: newFee
+    });
+    alert(`Cập nhật thành công "${newName}" với học phí ${newFee.toLocaleString('vi-VN')} VNĐ!`);
+    openClassDetailPage(currentSelectedClassId);
+  } catch (err) {
+    alert('Lỗi cập nhật đợt học: ' + err.message);
   }
 }
 

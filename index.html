@@ -127,7 +127,6 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Mã Lớp</th>
                     <th>Tên Lớp Học</th>
                     <th>Giáo Viên Dạy</th>
                     <th>Số HS Đang Học</th>
@@ -136,7 +135,7 @@
                   </tr>
                 </thead>
                 <tbody id="tbl-unpaid-classes-body">
-                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
+                  <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -163,12 +162,11 @@
                   <th>Họ và Tên</th>
                   <th>Khối</th>
                   <th>Lớp Hiện Tại</th>
-                  <th>Trạng Thái</th>
                   <th>Xem Chi Tiết</th>
                 </tr>
               </thead>
               <tbody id="tbl-students-body">
-                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
               </tbody>
             </table>
           </div>
@@ -279,7 +277,7 @@
           <div class="toolbar">
             <div class="search-input-group">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="search-class-input" class="input-control" placeholder="Tìm theo Mã Lớp, Tên Lớp, Giáo Viên...">
+              <input type="text" id="search-class-input" class="input-control" placeholder="Tìm theo Tên Lớp, Giáo Viên...">
             </div>
             <button class="btn btn-primary" id="btn-open-create-class">
               <i class="fa-solid fa-plus-circle"></i> Tạo Lớp Học Mới (Tự động 12 Đợt)
@@ -290,7 +288,6 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Mã Lớp</th>
                   <th>Tên Lớp Học</th>
                   <th>Môn Học</th>
                   <th>Khối</th>
@@ -301,7 +298,7 @@
                 </tr>
               </thead>
               <tbody id="tbl-classes-body">
-                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
               </tbody>
             </table>
           </div>
@@ -424,7 +421,6 @@
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>Mã Lớp</th>
                       <th>Tên Lớp</th>
                       <th>Khối</th>
                       <th>Trạng Thái Lớp</th>
@@ -482,24 +478,10 @@
               </div>
 
               <!-- RED WARNING BOX FOR OLD CLASS DEBTS -->
-              <div id="pos-old-class-debts-container" class="old-class-debt-box" style="display: none;">
-                <div class="old-class-debt-header">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                  <span>NỢ LỚP CỦA HỌC SINH CHUYỂN LỚP (CẦN THU GỘP)</span>
-                </div>
-                <p style="font-size: 13px; color: var(--danger-text); margin-bottom: 10px;">
-                  Học sinh có khoản nợ ở lớp cũ trước khi chuyển lớp. Tích chọn bên dưới để gom thu tiền cùng lúc:
-                </p>
-                <div id="pos-old-class-batch-pills" class="batch-pills-grid"></div>
-              </div>
+              <div id="pos-old-class-debts-container" class="old-class-debt-box" style="display: none;"></div>
 
               <!-- CURRENT CLASS BATCHES CONTAINER -->
-              <div id="pos-current-class-debts-container" class="card" style="display: none;">
-                <div class="card-header">
-                  <h3 class="card-title" id="pos-current-class-title"><i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> Các Đợt Học Lớp Hiện Tại</h3>
-                </div>
-                <div id="pos-current-class-batch-pills" class="batch-pills-grid"></div>
-              </div>
+              <div id="pos-current-class-debts-container" class="card" style="display: none;"></div>
             </div>
 
             <!-- POS CHECKOUT SIDEBAR SUMMARY -->
