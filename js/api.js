@@ -349,14 +349,23 @@ const ApiService = {
     return data;
   },
 
-  // 4. TEACHERS API
+  // 4. TEACHERS & SUBJECTS API
+  async getSubjects() {
+    const { data, error } = await dbClient
+      .from('subjects')
+      .select('*')
+      .order('subject_id', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
   async getTeachers(query = '') {
-    let q = dbClient.from('teachers').select('*');
+    let q = dbClient.from('teachers').select('*, subjects(subject_name)');
     if (query) {
       q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%`);
     }
 
-    const { data, error } = await q;
+    const { data, error } = await q.order('full_name', { ascending: true });
     if (error) throw error;
 
     const teachersWithCount = await Promise.all((data || []).map(async (t) => {
@@ -377,7 +386,7 @@ const ApiService = {
   async getTeacherDetails(teacherId) {
     const { data: teacher, error: tErr } = await dbClient
       .from('teachers')
-      .select('*')
+      .select('*, subjects(subject_name)')
       .eq('teacher_id', teacherId)
       .single();
     if (tErr) throw tErr;
@@ -399,15 +408,16 @@ const ApiService = {
     };
   },
 
-  async createTeacher(fullName, phone, email, specialty) {
+  async createTeacher(fullName, phone, subjectId) {
     const randomCode = 'GV' + Math.floor(100 + Math.random() * 900);
+    const phoneVal = (phone && phone.trim()) ? phone.trim() : '0000000000';
     const { data, error } = await dbClient
       .from('teachers')
       .insert([{
         teacher_code: randomCode,
         full_name: fullName,
-        phone: phone,
-        specialization_subject_id: 1
+        phone: phoneVal,
+        specialization_subject_id: subjectId ? parseInt(subjectId) : null
       }])
       .select()
       .single();

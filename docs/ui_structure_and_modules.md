@@ -133,12 +133,12 @@ Thanh điều hướng cố định bên trái giúp chuyển đổi giữa các
 #### Giao Diện 1: Trang Danh Sách Giáo Viên (`/#/teachers`)
 - **Thanh Công Cụ (Toolbar)**:
   - Ô tìm kiếm theo Tên Giáo viên, Số điện thoại, Môn phụ trách.
-  - Nút `+ Thêm Mới Giáo Viên`: Mở Modal nhập thông tin giáo viên.
+  - Nút `+ Thêm Mới Giáo Viên`: Mở Modal nhập thông tin giáo viên (Số điện thoại không bắt buộc, Môn chuyên môn chọn từ danh sách Dropdown).
 - **Bảng Danh Sách Giáo Viên (`tbl-teachers-body`)**:
   - **Mã GV**: Định dạng duy nhất (`GV0001`, `GV0002`...).
   - **Họ và Tên**: Tên giáo viên.
-  - **Số Điện Thoại**: SĐT liên lạc.
-  - **Môn Chuyên Môn**: Môn dạy chính.
+  - **Số Điện Thoại**: SĐT liên lạc (hiển thị *"Chưa có SĐT"* nếu để trống).
+  - **Môn Chuyên Môn**: Tên môn dạy chọn từ danh mục chuẩn (Toán, Lý, Hóa, Văn, Anh Văn, GVNN...).
   - **Lớp Phụ Trách**: Số lượng lớp đang phụ trách.
   - **Thao tác**: Nút `Xem Trang Chi Tiết` / `Sửa`.
 

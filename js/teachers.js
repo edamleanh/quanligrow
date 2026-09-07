@@ -24,21 +24,28 @@ function renderTeachersTable(teachers) {
     return;
   }
 
-  tbody.innerHTML = teachers.map(t => `
-    <tr>
-      <td><strong>${t.teacher_code || t.teacher_id.substring(0, 8)}</strong></td>
-      <td><strong style="color: var(--primary);">${t.full_name}</strong></td>
-      <td>${t.phone || 'N/A'}</td>
-      <td>${t.phone ? t.phone + '@grow.edu.vn' : 'N/A'}</td>
-      <td><span class="badge badge-active">Giáo viên Bộ môn</span></td>
-      <td><strong>${t.assignedClassCount} lớp</strong></td>
-      <td>
-        <button class="btn btn-sm btn-primary" onclick="openTeacherDetailPage('${t.teacher_id}')">
-          <i class="fa-solid fa-calculator"></i> Xem Trang Chi Tiết & Payroll
-        </button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = teachers.map(t => {
+    const hasPhone = (t.phone && t.phone !== '0000000000');
+    const phoneDisplay = hasPhone ? t.phone : `<span style="color: var(--text-muted); font-style: italic;">Chưa có SĐT</span>`;
+    const emailDisplay = hasPhone ? `${t.phone}@grow.edu.vn` : `<span style="color: var(--text-muted);">-</span>`;
+    const subjectName = t.subjects ? t.subjects.subject_name : (t.specialization_subject_id ? `Môn ID ${t.specialization_subject_id}` : 'Chưa phân môn');
+
+    return `
+      <tr>
+        <td><strong>${t.teacher_code || t.teacher_id.substring(0, 8)}</strong></td>
+        <td><strong style="color: var(--primary);">${t.full_name}</strong></td>
+        <td>${phoneDisplay}</td>
+        <td>${emailDisplay}</td>
+        <td><span class="badge badge-active" style="background: rgba(5, 150, 105, 0.1); color: var(--primary);"><i class="fa-solid fa-book-open" style="font-size: 11px; margin-right: 4px;"></i>${subjectName}</span></td>
+        <td><strong>${t.assignedClassCount} lớp</strong></td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="openTeacherDetailPage('${t.teacher_id}')">
+            <i class="fa-solid fa-calculator"></i> Xem Trang Chi Tiết & Payroll
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 async function openTeacherDetailPage(teacherId, updateHash = true) {
@@ -56,11 +63,14 @@ async function openTeacherDetailPage(teacherId, updateHash = true) {
     const data = await ApiService.getTeacherDetails(teacherId);
     const { teacher, classes, payroll } = data;
 
+    const phoneStr = (teacher.phone && teacher.phone !== '0000000000') ? teacher.phone : 'Chưa có SĐT';
+    const subStr = teacher.subjects ? teacher.subjects.subject_name : 'Chưa phân môn';
+
     // Header Info directly from DB
     document.getElementById('page-teacher-full-name').textContent = teacher.full_name;
-    document.getElementById('page-teacher-meta').textContent = `Mã GV: ${teacher.teacher_code} | SĐT: ${teacher.phone || 'N/A'} | Lớp phụ trách: ${classes.length} lớp`;
+    document.getElementById('page-teacher-meta').textContent = `Mã GV: ${teacher.teacher_code} | SĐT: ${phoneStr} | Chuyên môn: ${subStr} | Lớp phụ trách: ${classes.length} lớp`;
 
-    // Tab 1: Classes from DB (Hidden Mã Lớp)
+    // Tab 1: Classes from DB
     const tbodyClasses = document.getElementById('tbl-page-teacher-classes-body');
     tbodyClasses.innerHTML = classes.length > 0 ? classes.map(c => `
       <tr>
@@ -93,13 +103,20 @@ function initTeachersEvents() {
     searchInput.addEventListener('input', () => loadTeachersModule());
   }
 
-  // Open Add Teacher Modal
+  // Open Add Teacher Modal & Populate Subjects Dropdown
   const btnOpenAdd = document.getElementById('btn-open-add-teacher');
   if (btnOpenAdd) {
-    btnOpenAdd.addEventListener('click', () => {
+    btnOpenAdd.addEventListener('click', async () => {
       document.getElementById('form-teacher').reset();
       document.getElementById('teacher-id-field').value = '';
       document.getElementById('modal-teacher-form-title').textContent = 'Thêm Mới Giáo Viên';
+      
+      const subjects = await ApiService.getSubjects();
+      const selectSub = document.getElementById('teacher-subject-field');
+      if (selectSub) {
+        selectSub.innerHTML = subjects.map(s => `<option value="${s.subject_id}">${s.subject_name}</option>`).join('');
+      }
+
       openModal('modal-teacher-form');
     });
   }
@@ -111,20 +128,23 @@ function initTeachersEvents() {
       const teacherId = document.getElementById('teacher-id-field').value;
       const name = document.getElementById('teacher-name-field').value.trim();
       const phone = document.getElementById('teacher-phone-field').value.trim();
+      const subjectId = document.getElementById('teacher-subject-field').value;
 
-      if (!name || !phone) {
-        alert('Vui lòng điền đầy đủ Họ tên và Số điện thoại!');
+      if (!name) {
+        alert('Vui lòng nhập Họ và Tên giáo viên!');
         return;
       }
 
       try {
+        const phoneVal = phone ? phone : '0000000000';
         if (teacherId) {
           await ApiService.updateTeacher(teacherId, {
             full_name: name,
-            phone: phone
+            phone: phoneVal,
+            specialization_subject_id: subjectId ? parseInt(subjectId) : null
           });
         } else {
-          await ApiService.createTeacher(name, phone, '', '');
+          await ApiService.createTeacher(name, phoneVal, subjectId ? parseInt(subjectId) : null);
         }
 
         closeModal('modal-teacher-form');

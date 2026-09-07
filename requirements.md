@@ -49,8 +49,8 @@ Hệ thống phân chia 3 nhóm quyền chính:
 - **Thông tin lưu trữ**:
   - Mã Giáo viên (`teacher_code`): Khóa chính / Mã duy nhất.
   - Họ và Tên (`full_name`): Chuỗi văn bản, bắt buộc.
-  - Số điện thoại (`phone`): Chuỗi 10-11 chữ số, định dạng chuẩn.
-  - Môn phụ trách (`specialization_subject_id`): Liên kết danh mục Môn học.
+  - Số điện thoại (`phone`): Chuỗi 10-11 chữ số, **không bắt buộc (Tùy chọn)**.
+  - Môn phụ trách (`specialization_subject_id`): Chọn từ **Danh mục Môn học** (Dropdown: Toán, Lý, Hóa, Văn, Anh Văn, GVNN...).
 
 ### 2.3. Quản lý Học sinh (Students)
 - **Thông tin lưu trữ**:
