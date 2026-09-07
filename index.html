@@ -756,8 +756,11 @@
               <select id="class-teacher-field" class="form-control-simple"></select>
             </div>
             <div class="form-group">
-              <label class="form-label">Học Phí Gốc Cho Mỗi Đợt (VNĐ) (*)</label>
-              <input type="number" id="class-fee-field" class="form-control-simple" value="350000" step="10000">
+              <label class="form-label">Học Phí Gốc Mỗi Đợt (.000 VNĐ) (*)</label>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <input type="number" id="class-fee-field" class="form-control-simple" value="350" step="5" min="0" placeholder="350 (là 350.000 VNĐ)" style="font-weight: 700; color: var(--primary);">
+                <span style="font-size: 14px; font-weight: 700; color: var(--primary); white-space: nowrap;">.000 VNĐ</span>
+              </div>
             </div>
           </div>
         </form>

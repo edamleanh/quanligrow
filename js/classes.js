@@ -60,33 +60,36 @@ async function openClassDetailPage(classId, updateHash = true) {
     document.getElementById('page-class-title').innerHTML = `🏫 Lớp: ${classObj.class_name} (${classObj.subject_name}) - Năm Học ${classObj.academic_year || '2025-2026'}`;
     document.getElementById('page-class-meta').textContent = `Giáo viên phụ trách: ${classObj.teacher_name || 'Chưa phân công'} | Học phí gốc: ${Number(classObj.default_fee_rate).toLocaleString('vi-VN')} VNĐ/đợt | Sĩ số: ${roster.filter(r => r.status === 'ACTIVE').length} học sinh`;
 
-    // Tab 1: Render 12 Batches with Editable Name and Fee Rate
+    // Tab 1: Render 12 Batches with Editable Name and Fee Rate (.000 VNĐ)
     const tbodyBatches = document.getElementById('tbl-page-class-batches-body');
-    tbodyBatches.innerHTML = batches.map(b => `
-      <tr>
-        <td><strong>Đợt ${b.batch_number}</strong></td>
-        <td>
-          <input type="text" id="batch-name-${b.batch_id}" class="form-control-simple" value="${b.batch_name}" style="max-width: 180px; font-weight: 600;">
-        </td>
-        <td>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <input type="number" id="batch-fee-${b.batch_id}" class="form-control-simple" value="${b.fee_rate}" step="10000" style="max-width: 140px; font-weight: 700; color: var(--primary);">
-            <span style="font-size: 12px; color: var(--text-secondary);">VNĐ</span>
-          </div>
-        </td>
-        <td><strong style="color: var(--text-primary);">${b.teachers ? b.teachers.full_name : classObj.teacher_name}</strong></td>
-        <td>
-          ${b.status === 'DANG_HOC' || b.status === 'ACTIVE' ? '<span class="badge badge-active">Đang Học</span>' : ''}
-          ${b.status === 'UPCOMING' ? '<span class="badge badge-transferred">Sắp Tới</span>' : ''}
-          ${b.status === 'COMPLETED' ? '<span class="badge badge-completed">Đã Xong</span>' : ''}
-        </td>
-        <td>
-          <button class="btn btn-sm btn-primary" onclick="saveBatchEdit('${b.batch_id}')">
-            <i class="fa-solid fa-save"></i> Lưu Thay Đổi
-          </button>
-        </td>
-      </tr>
-    `).join('');
+    tbodyBatches.innerHTML = batches.map(b => {
+      const displayFeeK = b.fee_rate >= 1000 ? Math.round(b.fee_rate / 1000) : b.fee_rate;
+      return `
+        <tr>
+          <td><strong>Đợt ${b.batch_number}</strong></td>
+          <td>
+            <input type="text" id="batch-name-${b.batch_id}" class="form-control-simple" value="${b.batch_name}" style="max-width: 180px; font-weight: 600;">
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <input type="number" id="batch-fee-${b.batch_id}" class="form-control-simple" value="${displayFeeK}" step="5" min="0" style="max-width: 100px; font-weight: 700; color: var(--primary); text-align: right;">
+              <span style="font-size: 13px; font-weight: 700; color: var(--primary);">.000 VNĐ</span>
+            </div>
+          </td>
+          <td><strong style="color: var(--text-primary);">${b.teachers ? b.teachers.full_name : classObj.teacher_name}</strong></td>
+          <td>
+            ${b.status === 'DANG_HOC' || b.status === 'ACTIVE' ? '<span class="badge badge-active">Đang Học</span>' : ''}
+            ${b.status === 'UPCOMING' ? '<span class="badge badge-transferred">Sắp Tới</span>' : ''}
+            ${b.status === 'COMPLETED' ? '<span class="badge badge-completed">Đã Xong</span>' : ''}
+          </td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="saveBatchEdit('${b.batch_id}')">
+              <i class="fa-solid fa-save"></i> Lưu Thay Đổi
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     // Tab 2: Render Roster
     const tbodyRoster = document.getElementById('tbl-page-class-roster-body');
@@ -119,20 +122,22 @@ async function openClassDetailPage(classId, updateHash = true) {
 
 async function saveBatchEdit(batchId) {
   const newName = document.getElementById(`batch-name-${batchId}`).value.trim();
-  const newFee = Number(document.getElementById(`batch-fee-${batchId}`).value);
+  const inputFeeVal = Number(document.getElementById(`batch-fee-${batchId}`).value);
 
-  if (!newName || isNaN(newFee) || newFee < 0) {
+  if (!newName || isNaN(inputFeeVal) || inputFeeVal < 0) {
     alert('Vui lòng nhập Tên Đợt và Học Phí Đợt hợp lệ!');
     return;
   }
 
+  const actualFee = inputFeeVal < 1000 ? inputFeeVal * 1000 : inputFeeVal;
+
   try {
     await ApiService.updateBatch(batchId, {
       batch_name: newName,
-      fee_rate: newFee
+      fee_rate: actualFee
     });
-    alert(`Cập nhật thành công "${newName}" với học phí ${newFee.toLocaleString('vi-VN')} VNĐ!`);
-    openClassDetailPage(currentSelectedClassId);
+    alert(`Cập nhật thành công "${newName}" với học phí ${actualFee.toLocaleString('vi-VN')} VNĐ!`);
+    openClassDetailPage(currentSelectedClassId, false);
   } catch (err) {
     alert('Lỗi cập nhật đợt học: ' + err.message);
   }
@@ -143,7 +148,7 @@ async function withdrawStudent(enrollmentId) {
     try {
       await ApiService.withdrawStudentFromClass(enrollmentId);
       alert('Đã rút học sinh khỏi lớp!');
-      openClassDetailPage(currentSelectedClassId);
+      openClassDetailPage(currentSelectedClassId, false);
     } catch (err) {
       alert('Lỗi rút học sinh: ' + err.message);
     }
@@ -161,16 +166,16 @@ function initClassesEvents() {
     academicYearSelect.addEventListener('change', () => loadClassesModule());
   }
 
-  // Auto adjust fee based on subject selection
+  // Auto adjust fee based on subject selection (.000 VNĐ)
   const subjectSelect = document.getElementById('class-subject-field');
   if (subjectSelect) {
     subjectSelect.addEventListener('change', (e) => {
       const subject = e.target.value;
       const feeInput = document.getElementById('class-fee-field');
       if (subject === 'Ngữ văn') {
-        feeInput.value = 300000;
+        feeInput.value = 300;
       } else {
-        feeInput.value = 350000;
+        feeInput.value = 350;
       }
     });
   }
@@ -181,6 +186,7 @@ function initClassesEvents() {
     btnOpenCreate.addEventListener('click', async () => {
       document.getElementById('form-class').reset();
       document.getElementById('class-id-field').value = '';
+      document.getElementById('class-fee-field').value = 350;
 
       const teachers = await ApiService.getTeachers();
       const teacherSelect = document.getElementById('class-teacher-field');
@@ -198,19 +204,21 @@ function initClassesEvents() {
       const subject = document.getElementById('class-subject-field').value;
       const gradeLevel = document.getElementById('class-grade-field').value;
       const teacherId = document.getElementById('class-teacher-field').value;
-      const feePerBatch = Number(document.getElementById('class-fee-field').value);
+      const inputFeeVal = Number(document.getElementById('class-fee-field').value);
       const academicYear = document.getElementById('class-academic-year-field')?.value || '2025-2026';
 
-      if (!name || !teacherId || !feePerBatch) {
+      if (!name || !teacherId || isNaN(inputFeeVal) || inputFeeVal <= 0) {
         alert('Vui lòng điền đầy đủ Tên lớp, Giáo viên và Học phí gốc!');
         return;
       }
 
+      const actualFee = inputFeeVal < 1000 ? inputFeeVal * 1000 : inputFeeVal;
+
       try {
-        await ApiService.createClassWith12Batches(name, subject, gradeLevel, teacherId, feePerBatch, academicYear);
+        await ApiService.createClassWith12Batches(name, subject, gradeLevel, teacherId, actualFee, academicYear);
         closeModal('modal-class-form');
         loadClassesModule();
-        alert(`Tạo lớp "${name}" (${academicYear}) và tự động sinh 12 Đợt học (Đợt 1 -> Đợt 12) thành công!`);
+        alert(`Tạo lớp "${name}" (${academicYear}) với học phí ${actualFee.toLocaleString('vi-VN')} VNĐ/đợt và tự động sinh 12 Đợt học thành công!`);
       } catch (err) {
         alert('Lỗi tạo lớp học: ' + err.message);
       }

@@ -332,7 +332,9 @@ function toggleBatchSelection(batchId) {
 function updateCustomBatchFee(batchId, val) {
   const b = posBatchesMap.get(batchId);
   if (b) {
-    b.custom_fee = Number(val);
+    const numVal = Number(val);
+    const actualFee = numVal < 1000 ? numVal * 1000 : numVal;
+    b.custom_fee = actualFee;
   }
   calculatePosTotal();
 }
@@ -378,7 +380,8 @@ function updatePosCheckoutSummary() {
       isFirstTimePaymentForAnyClass = true;
     }
 
-    const currentFee = b.custom_fee !== undefined ? b.custom_fee : Number(b.fee_amount || 350000);
+    const currentFeeRaw = b.custom_fee !== undefined ? b.custom_fee : Number(b.fee_amount || 350000);
+    const displayFeeK = currentFeeRaw >= 1000 ? Math.round(currentFeeRaw / 1000) : currentFeeRaw;
 
     return `
       <div style="margin-bottom: 12px; background: #ffffff; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
@@ -387,10 +390,10 @@ function updatePosCheckoutSummary() {
           <span style="font-size: 12px; color: var(--text-secondary);">Thực thu đợt này:</span>
           <div style="display: flex; align-items: center; gap: 4px;">
             <input type="number" id="pos-item-fee-${b.id}" class="form-control-simple" 
-                   value="${currentFee}" step="10000" min="0" 
-                   style="max-width: 120px; font-weight: 700; color: var(--primary); text-align: right; padding: 4px 8px;"
+                   value="${displayFeeK}" step="5" min="0" 
+                   style="max-width: 90px; font-weight: 700; color: var(--primary); text-align: right; padding: 4px 8px;"
                    oninput="updateCustomBatchFee('${b.id}', this.value)">
-            <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">đ</span>
+            <span style="font-size: 13px; font-weight: 700; color: var(--primary);">.000 VNĐ</span>
           </div>
         </div>
       </div>
