@@ -46,7 +46,7 @@ SELECT DISTINCT
     'Lớp ' || "LỚP" || TRIM("TOÁN") || ' - Toán' AS class_name,
     CASE WHEN "LỚP" ~ '^[0-9]+$' AND "LỚP"::INT BETWEEN 1 AND 12 THEN "LỚP"::INT ELSE 6 END AS grade,
     (SELECT subject_id FROM subjects WHERE subject_code = 'TOAN'),
-    800000.00
+    350000.00
 FROM ds_tong
 WHERE "TOÁN" IS NOT NULL AND TRIM("TOÁN") != ''
 ON CONFLICT DO NOTHING;
@@ -57,7 +57,7 @@ SELECT DISTINCT
     'Lớp ' || "LỚP" || TRIM("VĂN") || ' - Văn' AS class_name,
     CASE WHEN "LỚP" ~ '^[0-9]+$' AND "LỚP"::INT BETWEEN 1 AND 12 THEN "LỚP"::INT ELSE 6 END AS grade,
     (SELECT subject_id FROM subjects WHERE subject_code = 'VAN'),
-    700000.00
+    300000.00
 FROM ds_tong
 WHERE "VĂN" IS NOT NULL AND TRIM("VĂN") != ''
 ON CONFLICT DO NOTHING;
@@ -68,7 +68,7 @@ SELECT DISTINCT
     'Lớp ' || "LỚP" || TRIM("AV") || ' - Anh Văn' AS class_name,
     CASE WHEN "LỚP" ~ '^[0-9]+$' AND "LỚP"::INT BETWEEN 1 AND 12 THEN "LỚP"::INT ELSE 6 END AS grade,
     (SELECT subject_id FROM subjects WHERE subject_code = 'AV'),
-    750000.00
+    350000.00
 FROM ds_tong
 WHERE "AV" IS NOT NULL AND TRIM("AV") != ''
 ON CONFLICT DO NOTHING;
@@ -79,7 +79,7 @@ SELECT DISTINCT
     'Lớp ' || "LỚP" || TRIM("Hóa") || ' - Hóa' AS class_name,
     CASE WHEN "LỚP" ~ '^[0-9]+$' AND "LỚP"::INT BETWEEN 1 AND 12 THEN "LỚP"::INT ELSE 6 END AS grade,
     (SELECT subject_id FROM subjects WHERE subject_code = 'HOA'),
-    800000.00
+    350000.00
 FROM ds_tong
 WHERE "Hóa" IS NOT NULL AND TRIM("Hóa") != ''
 ON CONFLICT DO NOTHING;
@@ -90,7 +90,7 @@ SELECT DISTINCT
     'Lớp ' || "LỚP" || TRIM("Lý") || ' - Lý' AS class_name,
     CASE WHEN "LỚP" ~ '^[0-9]+$' AND "LỚP"::INT BETWEEN 1 AND 12 THEN "LỚP"::INT ELSE 6 END AS grade,
     (SELECT subject_id FROM subjects WHERE subject_code = 'LY'),
-    800000.00
+    350000.00
 FROM ds_tong
 WHERE "Lý" IS NOT NULL AND TRIM("Lý") != ''
 ON CONFLICT DO NOTHING;
