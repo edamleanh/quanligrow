@@ -204,7 +204,12 @@ export function showClassModal(classObj = null, activeYear = '2025-2026') {
           showToast('Tạo mới lớp học & tự động sinh 12 đợt học thành công!');
         }
         closeModal();
-        loadClassesData(activeYear);
+        const hash = window.location.hash;
+        if (hash.startsWith('#/classes/') && isEdit && classObj) {
+          renderClassDetailView(document.getElementById('app-view'), classObj.class_id);
+        } else {
+          loadClassesData(activeYear);
+        }
       } catch (err) {
         console.error('Error saving class:', err);
         showToast('Lỗi lưu lớp học: ' + err.message, 'error');

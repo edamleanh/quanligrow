@@ -160,7 +160,12 @@ export function showTeacherModal(teacher = null) {
           showToast('Tạo mới giáo viên thành công!');
         }
         closeModal();
-        loadTeachersData();
+        const hash = window.location.hash;
+        if (hash.startsWith('#/teachers/') && isEdit && teacher) {
+          renderTeacherDetailView(document.getElementById('app-view'), teacher.teacher_id);
+        } else {
+          loadTeachersData();
+        }
       } catch (err) {
         console.error('Error saving teacher:', err);
         showToast('Lỗi lưu thông tin giáo viên: ' + err.message, 'error');

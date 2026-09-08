@@ -405,6 +405,7 @@ async function executePOSPayment() {
     showPrintableReceiptModal(receipt, student, Array.from(selectedPaymentItemsState.values()));
 
     window.clearPOSStudent();
+    loadDebtReport();
   } catch (err) {
     console.error('Error executing POS payment:', err);
     showToast('Lỗi thu tiền biên lai: ' + err.message, 'error');

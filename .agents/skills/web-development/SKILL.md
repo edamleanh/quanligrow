@@ -19,6 +19,10 @@ Tài liệu này định nghĩa quy trình, phương pháp kiểm tra tính năn
    - Sau khi hoàn thành mã nguồn của **MỖI MODULE** (ví dụ: Module Học sinh, Module Lớp học, Module POS...), Lập trình viên **BẮT BUỘC PHẢI ĐỐI SOÁT** danh sách tính năng thực tế đã chạy với [requirements.md](file:///c:/Users/ACER/Desktop/grow/requirements.md).
    - Tuyệt đối không chuyển sang Module tiếp theo nếu Module hiện tại còn thiếu tính năng hoặc chưa xử lý hết các trường hợp biên (edge cases).
 
+3. **Cập Nhật & Tái Hiển Thị Giao Diện Tức Thì (Instant UI Re-render & Auto-Refresh)**:
+   - **Tất cả các thao tác thay đổi dữ liệu (Thêm mới, Cập nhật, Chuyển lớp, Đổi trạng thái, Lập biên lai, Xóa)** BẮT BUỘC PHẢI tự động gọi hàm re-fetch/re-render (`load...Data()` hoặc `render...DetailView()`) NGAY LẬP TỨC sau khi API phản hồi thành công.
+   - **Không bao giờ** để giao diện ở trạng thái stale data hoặc bắt người dùng phải F5 / Reload trang thủ công để thấy dữ liệu mới vừa cập nhật.
+
 ---
 
 ## 2. Quy Trình Phát Triển Module 5 Bước (5-Step Module Workflow)

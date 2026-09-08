@@ -174,7 +174,12 @@ export function showStudentModal(student = null) {
         showToast('Tạo mới học sinh thành công!');
       }
       closeModal();
-      loadStudentsData();
+      const hash = window.location.hash;
+      if (hash.startsWith('#/students/') && isEdit && student) {
+        renderStudentDetailView(document.getElementById('app-view'), student.student_id);
+      } else {
+        loadStudentsData();
+      }
     } catch (err) {
       console.error('Error saving student:', err);
       showToast('Lỗi lưu thông tin học sinh: ' + err.message, 'error');

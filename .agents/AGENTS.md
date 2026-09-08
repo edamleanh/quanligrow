@@ -24,3 +24,7 @@ Whenever processing requirements or database updates, ALWAYS follow the 5-step p
 - `database/schema.sql`: Physical Supabase DDL SQL Schema, Triggers, Views, and RLS.
 - `database/migration.sql`: Data Migration Scripts.
 - `.agents/skills/database-design/SKILL.md`: Core Database Design Skill.
+
+## 5. UI Auto-Refresh & Instant State Mutation Rule
+- **Mandatory Rule across all modules**: Whenever ANY data mutation occurs (Create, Update, Delete, Transfer, Status Change, Payment), the code MUST IMMEDIATELY trigger an automatic re-fetch/re-render (`load...Data()` or `render...DetailView()`) of the currently active view so the updated state is instantly reflected on screen without requiring page reloads or user navigation.
+
