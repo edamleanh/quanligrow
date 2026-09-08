@@ -18,7 +18,10 @@ export async function renderClassesView(container, activeYear) {
     <!-- Filters & Search Bar -->
     <div class="card" style="margin-bottom: 24px; padding: 16px 24px;">
       <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-        <input type="text" id="search-class-input" class="form-control" style="flex: 1; min-width: 250px;" placeholder="🔍 Tìm theo Tên lớp học...">
+        <div style="position: relative; flex: 1; min-width: 250px;">
+          <input type="text" id="search-class-input" class="form-control" placeholder="🔍 Tìm theo Tên lớp học (VD: Toán 6A, Anh Văn 9B)..." autocomplete="off">
+          <div id="search-class-suggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); max-height: 280px; overflow-y: auto; margin-top: 4px;"></div>
+        </div>
         
         <select id="filter-class-grade" class="form-control" style="width: 150px;">
           <option value="">-- Tất cả Khối --</option>
@@ -35,11 +38,64 @@ export async function renderClassesView(container, activeYear) {
     </div>
   `;
 
+  const classSearchInput = document.getElementById('search-class-input');
+  const classSuggestionsBox = document.getElementById('search-class-suggestions');
+  let classSearchTimer = null;
+
   document.getElementById('btn-add-class').onclick = () => showClassModal(null, activeYear);
-  document.getElementById('btn-search-class').onclick = () => loadClassesData(activeYear);
-  document.getElementById('search-class-input').onkeyup = (e) => {
-    if (e.key === 'Enter') loadClassesData(activeYear);
+  document.getElementById('btn-search-class').onclick = () => {
+    classSuggestionsBox.style.display = 'none';
+    loadClassesData(activeYear);
   };
+
+  classSearchInput.oninput = (e) => {
+    const val = e.target.value.trim();
+    clearTimeout(classSearchTimer);
+
+    // Live search grid refresh
+    classSearchTimer = setTimeout(() => {
+      loadClassesData(activeYear);
+    }, 250);
+
+    // Proposal Autocomplete Dropdown
+    if (val.length >= 1) {
+      api.getClasses({ academic_year: activeYear, search: val, grade: document.getElementById('filter-class-grade').value })
+        .then(matches => {
+          if (!matches || matches.length === 0) {
+            classSuggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy lớp học phù hợp</div>`;
+          } else {
+            classSuggestionsBox.innerHTML = matches.slice(0, 6).map(c => `
+              <div class="class-suggestion-item" data-id="${c.class_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+                <div>
+                  <strong style="color: var(--teal-600);">${c.class_name}</strong> (Khối ${c.grade})
+                  <div style="font-size: 12px; color: var(--text-muted);">Môn: ${c.subjects ? c.subjects.subject_name : '-'} | GV: ${c.teachers ? c.teachers.full_name : 'Chưa phân công'}</div>
+                </div>
+                <span class="badge badge-active" style="font-size: 11px;">Xem 12 Đợt ➔</span>
+              </div>
+            `).join('');
+
+            classSuggestionsBox.querySelectorAll('.class-suggestion-item').forEach(el => {
+              el.onclick = () => {
+                const cid = el.getAttribute('data-id');
+                classSuggestionsBox.style.display = 'none';
+                window.location.hash = `#/classes/${cid}`;
+              };
+            });
+          }
+          classSuggestionsBox.style.display = 'block';
+        }).catch(err => console.error('Error getting class proposals:', err));
+    } else {
+      classSuggestionsBox.style.display = 'none';
+    }
+  };
+
+  // Close dropdown on click outside
+  document.addEventListener('click', (evt) => {
+    if (classSuggestionsBox && !classSearchInput.contains(evt.target) && !classSuggestionsBox.contains(evt.target)) {
+      classSuggestionsBox.style.display = 'none';
+    }
+  });
+
   document.getElementById('filter-class-grade').onchange = () => loadClassesData(activeYear);
 
   loadClassesData(activeYear);

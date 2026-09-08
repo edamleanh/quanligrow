@@ -18,7 +18,10 @@ export async function renderStudentsView(container) {
     <!-- Filters & Search Bar -->
     <div class="card" style="margin-bottom: 24px; padding: 16px 24px;">
       <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-        <input type="text" id="search-student-input" class="form-control" style="flex: 1; min-width: 250px;" placeholder="🔍 Tìm theo Họ tên, SĐT, Mã học sinh (VD: HS00120)...">
+        <div style="position: relative; flex: 1; min-width: 250px;">
+          <input type="text" id="search-student-input" class="form-control" placeholder="🔍 Tìm theo Họ tên, SĐT, Mã học sinh (VD: HS00120)..." autocomplete="off">
+          <div id="search-student-suggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); max-height: 280px; overflow-y: auto; margin-top: 4px;"></div>
+        </div>
         
         <select id="filter-grade" class="form-control" style="width: 150px;">
           <option value="">-- Tất cả Khối --</option>
@@ -54,11 +57,64 @@ export async function renderStudentsView(container) {
   `;
 
   // Bind Events
+  const searchInput = document.getElementById('search-student-input');
+  const suggestionsBox = document.getElementById('search-student-suggestions');
+  let searchTimer = null;
+
   document.getElementById('btn-add-student').onclick = () => showStudentModal();
-  document.getElementById('btn-search-student').onclick = () => loadStudentsData();
-  document.getElementById('search-student-input').onkeyup = (e) => {
-    if (e.key === 'Enter') loadStudentsData();
+  document.getElementById('btn-search-student').onclick = () => {
+    suggestionsBox.style.display = 'none';
+    loadStudentsData();
   };
+
+  searchInput.oninput = (e) => {
+    const val = e.target.value.trim();
+    clearTimeout(searchTimer);
+
+    // Live search table refresh (250ms debounce)
+    searchTimer = setTimeout(() => {
+      loadStudentsData();
+    }, 250);
+
+    // Proposal Autocomplete Dropdown
+    if (val.length >= 1) {
+      api.getStudents({ search: val, grade: document.getElementById('filter-grade').value })
+        .then(({ data: matches }) => {
+          if (!matches || matches.length === 0) {
+            suggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy đề xuất phù hợp</div>`;
+          } else {
+            suggestionsBox.innerHTML = matches.slice(0, 6).map(s => `
+              <div class="student-suggestion-item" data-id="${s.student_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+                <div>
+                  <strong style="color: var(--teal-600);">${s.student_code}</strong> - <strong>${s.full_name}</strong>
+                  <div style="font-size: 12px; color: var(--text-muted);">${s.phone ? `📞 ${s.phone}` : 'Chưa có SĐT'} | Khối ${s.grade}</div>
+                </div>
+                <span class="badge badge-active" style="font-size: 11px;">Xem Hồ Sơ ➔</span>
+              </div>
+            `).join('');
+
+            suggestionsBox.querySelectorAll('.student-suggestion-item').forEach(el => {
+              el.onclick = () => {
+                const sid = el.getAttribute('data-id');
+                suggestionsBox.style.display = 'none';
+                window.location.hash = `#/students/${sid}`;
+              };
+            });
+          }
+          suggestionsBox.style.display = 'block';
+        }).catch(err => console.error('Error getting student proposals:', err));
+    } else {
+      suggestionsBox.style.display = 'none';
+    }
+  };
+
+  // Close suggestions box on click outside
+  document.addEventListener('click', (evt) => {
+    if (suggestionsBox && !searchInput.contains(evt.target) && !suggestionsBox.contains(evt.target)) {
+      suggestionsBox.style.display = 'none';
+    }
+  });
+
   document.getElementById('filter-grade').onchange = () => loadStudentsData();
 
   loadStudentsData();

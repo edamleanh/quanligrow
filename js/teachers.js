@@ -18,7 +18,10 @@ export async function renderTeachersView(container) {
     <!-- Search Bar -->
     <div class="card" style="margin-bottom: 24px; padding: 16px 24px;">
       <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-        <input type="text" id="search-teacher-input" class="form-control" style="flex: 1; min-width: 250px;" placeholder="🔍 Tìm theo Họ tên, SĐT, Mã giáo viên...">
+        <div style="position: relative; flex: 1; min-width: 250px;">
+          <input type="text" id="search-teacher-input" class="form-control" placeholder="🔍 Tìm theo Họ tên, SĐT, Mã giáo viên..." autocomplete="off">
+          <div id="search-teacher-suggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); max-height: 280px; overflow-y: auto; margin-top: 4px;"></div>
+        </div>
         <button class="btn btn-secondary" id="btn-search-teacher">Tìm Kiếm</button>
       </div>
     </div>
@@ -46,11 +49,68 @@ export async function renderTeachersView(container) {
     </div>
   `;
 
+  const teacherSearchInput = document.getElementById('search-teacher-input');
+  const teacherSuggestionsBox = document.getElementById('search-teacher-suggestions');
+  let teacherSearchTimer = null;
+
   document.getElementById('btn-add-teacher').onclick = () => showTeacherModal();
-  document.getElementById('btn-search-teacher').onclick = () => loadTeachersData();
-  document.getElementById('search-teacher-input').onkeyup = (e) => {
-    if (e.key === 'Enter') loadTeachersData();
+  document.getElementById('btn-search-teacher').onclick = () => {
+    teacherSuggestionsBox.style.display = 'none';
+    loadTeachersData();
   };
+
+  teacherSearchInput.oninput = (e) => {
+    const val = e.target.value.trim().toLowerCase();
+    clearTimeout(teacherSearchTimer);
+
+    // Live search table refresh
+    teacherSearchTimer = setTimeout(() => {
+      loadTeachersData();
+    }, 250);
+
+    // Proposal Autocomplete Dropdown
+    if (val.length >= 1) {
+      api.getTeachers().then(allTeachers => {
+        const matches = allTeachers.filter(t => 
+          t.full_name.toLowerCase().includes(val) ||
+          t.teacher_code.toLowerCase().includes(val) ||
+          (t.phone && t.phone.includes(val))
+        );
+
+        if (!matches || matches.length === 0) {
+          teacherSuggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy giáo viên phù hợp</div>`;
+        } else {
+          teacherSuggestionsBox.innerHTML = matches.slice(0, 6).map(t => `
+            <div class="teacher-suggestion-item" data-id="${t.teacher_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+              <div>
+                <strong style="color: var(--teal-600);">${t.teacher_code}</strong> - <strong>${t.full_name}</strong>
+                <div style="font-size: 12px; color: var(--text-muted);">Môn: ${t.subjects ? t.subjects.subject_name : 'Chưa phân'} | SĐT: ${t.phone || 'Chưa có'}</div>
+              </div>
+              <span class="badge badge-active" style="font-size: 11px;">Xem Lương/Lớp ➔</span>
+            </div>
+          `).join('');
+
+          teacherSuggestionsBox.querySelectorAll('.teacher-suggestion-item').forEach(el => {
+            el.onclick = () => {
+              const tid = el.getAttribute('data-id');
+              teacherSuggestionsBox.style.display = 'none';
+              window.location.hash = `#/teachers/${tid}`;
+            };
+          });
+        }
+        teacherSuggestionsBox.style.display = 'block';
+      }).catch(err => console.error('Error getting teacher proposals:', err));
+    } else {
+      teacherSuggestionsBox.style.display = 'none';
+    }
+  };
+
+  // Close dropdown on click outside
+  document.addEventListener('click', (evt) => {
+    if (teacherSuggestionsBox && !teacherSearchInput.contains(evt.target) && !teacherSuggestionsBox.contains(evt.target)) {
+      teacherSuggestionsBox.style.display = 'none';
+    }
+  });
 
   loadTeachersData();
 }
