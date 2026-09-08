@@ -108,6 +108,35 @@ export function showClassModal(classObj = null, activeYear = '2025-2026') {
               ${[1,2,3,4,5,6,7,8,9,10,11,12].map(g => `<option value="${g}" ${classObj && classObj.grade === g ? 'selected' : ''}>Khối ${g}</option>`).join('')}
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label">Môn Học (*)</label>
+            <select id="m-class-subject" class="form-control" required>
+              ${subjects.map(s => `<option value="${s.subject_id}" ${classObj && classObj.subject_id === s.subject_id ? 'selected' : ''}>${s.subject_name}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Giáo Viên Phụ Trách (Chỉ hiện GV đúng chuyên môn)</label>
+            <select id="m-class-teacher" class="form-control">
+              <option value="">-- Chưa Phân Công --</option>
+              ${teachers.map(t => `<option value="${t.teacher_id}" ${classObj && classObj.teacher_id === t.teacher_id ? 'selected' : ''}>${t.full_name} (${t.teacher_code})</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Học Phí Gốc Cho 1 Đợt (VNĐ)</label>
+            <input type="number" id="m-class-fee" class="form-control" value="${classObj ? classObj.default_fee_rate : 350000}" placeholder="Ví dụ: 350000">
+          </div>
+        </div>
+      </form>
+    `;
+
+    const footerHtml = `
+      <button class="btn btn-secondary" onclick="window.closeModal()">Hủy Bỏ</button>
+      <button class="btn btn-primary" id="btn-save-class-modal">${isEdit ? 'Cập Nhật' : 'Tạo Lớp & Tự Động Sinh 12 Đợt'}</button>
+    `;
 
     openModal(title, bodyHtml, footerHtml);
 
