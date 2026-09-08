@@ -131,15 +131,18 @@ export async function renderStudentsView(container) {
 }
 
 async function loadStudentsData() {
-  const search = document.getElementById('search-student-input').value.trim();
+  const searchInput = document.getElementById('search-student-input');
+  const search = searchInput ? searchInput.value.trim() : '';
   const cleanSearch = removeVietnameseTones(search);
-  const grade = document.getElementById('filter-grade').value;
+  const gradeSelect = document.getElementById('filter-grade');
+  const grade = gradeSelect ? gradeSelect.value : '';
 
   const tbody = document.getElementById('student-table-body');
+  if (!tbody) return;
   tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">Đang tải dữ liệu...</td></tr>`;
 
   try {
-    const { data: rawStudents } = await api.getStudents({ grade });
+    const { data: rawStudents, count } = await api.getStudents({ grade });
 
     const students = cleanSearch
       ? (rawStudents || []).filter(s =>
@@ -149,8 +152,11 @@ async function loadStudentsData() {
         )
       : (rawStudents || []);
 
+    const paginationEl = document.getElementById('student-pagination');
+
     if (students.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">Không tìm thấy học sinh nào phù hợp.</td></tr>`;
+      if (paginationEl) paginationEl.innerText = `Hiển thị 0 / Tổng số ${count || 0} học sinh`;
       return;
     }
 
@@ -179,10 +185,11 @@ async function loadStudentsData() {
       `;
     }).join('');
 
-    document.getElementById('student-pagination').innerText = `Hiển thị ${Math.min(50, students.length)} / Tổng số ${count} học sinh`;
+    const totalCount = cleanSearch ? students.length : (count || students.length);
+    if (paginationEl) paginationEl.innerText = `Hiển thị ${Math.min(50, students.length)} / Tổng số ${totalCount} học sinh`;
   } catch (err) {
     console.error('Error loading students:', err);
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--status-overdue-color); padding: 24px;">Lỗi tải dữ liệu học sinh.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--status-overdue-color); padding: 24px;">Lỗi tải dữ liệu học sinh.</td></tr>`;
   }
 }
 
