@@ -382,7 +382,10 @@ export async function renderClassDetailView(container, classId) {
 
       <!-- Tab 2: Student Roster Content -->
       <div id="tab-content-roster" class="card" style="display: none;">
-        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 16px;">Danh Sách Học Sinh Ghi Danh Lớp</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 18px; font-weight: 800; margin: 0;">Danh Sách Học Sinh Ghi Danh Lớp</h3>
+          <button class="btn btn-primary" id="btn-add-student-to-class">➕ Thêm Học Sinh Vào Lớp Này</button>
+        </div>
         <div class="table-container">
           <table class="data-table">
             <thead>
@@ -445,6 +448,8 @@ export async function renderClassDetailView(container, classId) {
     };
 
     document.getElementById('btn-edit-class-profile').onclick = () => showClassModal(classObj, classObj.academic_year);
+    const btnAddStudent = document.getElementById('btn-add-student-to-class');
+    if (btnAddStudent) btnAddStudent.onclick = () => showAddStudentToClassModal(classObj);
 
   } catch (err) {
     console.error('Error loading class details:', err);
@@ -539,3 +544,123 @@ window.quickSetCurrentBatch = async function(classId, batchNumber) {
     showToast('Lỗi chuyển đợt: ' + err.message, 'error');
   }
 };
+
+// Modal to Add / Enroll a Student into a Class directly from Class Details
+export function showAddStudentToClassModal(classObj) {
+  let selectedStudentId = null;
+
+  const title = `➕ Ghi Danh Học Sinh Vào Lớp (${classObj.class_name})`;
+
+  const bodyHtml = `
+    <form id="form-add-student-to-class">
+      <div class="form-group">
+        <label class="form-label">Chọn Học Sinh (*)</label>
+        <div style="position: relative;">
+          <input type="text" id="m-search-student-class-input" class="form-control" placeholder="🔍 Tìm theo Tên, SĐT, Mã HS (gõ 'hai', 'toan')..." autocomplete="off" required>
+          <div id="m-student-class-suggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); max-height: 250px; overflow-y: auto; margin-top: 4px;"></div>
+        </div>
+        <div id="m-selected-student-banner" style="display: none; margin-top: 10px; padding: 10px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); color: #166534; font-weight: 700; font-size: 13px;"></div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+        <div class="form-group">
+          <label class="form-label">Đợt Bắt Đầu Học (*)</label>
+          <select id="m-add-start-batch" class="form-control">
+            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(b => `<option value="${b}">Đợt ${b}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Đợt Kết Thúc Học (*)</label>
+          <select id="m-add-end-batch" class="form-control">
+            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(b => `<option value="${b}" ${b === 12 ? 'selected' : ''}>Đợt ${b}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </form>
+  `;
+
+  const footerHtml = `
+    <button class="btn btn-secondary" onclick="window.closeModal()">Hủy Bỏ</button>
+    <button class="btn btn-primary" id="btn-save-add-student-to-class">Xác Nhận Ghi Danh</button>
+  `;
+
+  openModal(title, bodyHtml, footerHtml);
+
+  const input = document.getElementById('m-search-student-class-input');
+  const suggs = document.getElementById('m-student-class-suggestions');
+  const banner = document.getElementById('m-selected-student-banner');
+
+  input.oninput = (e) => {
+    const rawVal = e.target.value.trim();
+    const cleanVal = removeVietnameseTones(rawVal);
+
+    if (cleanVal.length >= 1) {
+      api.getStudents().then(({ data: allStudents }) => {
+        const matches = (allStudents || []).filter(s =>
+          removeVietnameseTones(s.full_name).includes(cleanVal) ||
+          removeVietnameseTones(s.student_code).includes(cleanVal) ||
+          (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
+        );
+
+        if (!matches || matches.length === 0) {
+          suggs.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy học sinh nào</div>`;
+        } else {
+          suggs.innerHTML = matches.slice(0, 6).map(s => `
+            <div class="sugg-item" data-id="${s.student_id}" data-name="${s.full_name}" data-code="${s.student_code}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+              <strong style="color: var(--teal-600);">${s.student_code}</strong> - <strong>${s.full_name}</strong> (Khối ${s.grade})
+            </div>
+          `).join('');
+
+          suggs.querySelectorAll('.sugg-item').forEach(el => {
+            el.onclick = () => {
+              selectedStudentId = el.getAttribute('data-id');
+              const name = el.getAttribute('data-name');
+              const code = el.getAttribute('data-code');
+
+              input.value = `${name} (${code})`;
+              suggs.style.display = 'none';
+              banner.style.display = 'block';
+              banner.innerHTML = `✅ Đã chọn: <strong>${name} (${code})</strong>`;
+            };
+          });
+        }
+        suggs.style.display = 'block';
+      });
+    } else {
+      suggs.style.display = 'none';
+    }
+  };
+
+  document.getElementById('btn-save-add-student-to-class').onclick = async () => {
+    if (!selectedStudentId) {
+      alert('Vui lòng chọn học sinh từ danh sách đề xuất!');
+      return;
+    }
+
+    const startBatch = parseInt(document.getElementById('m-add-start-batch').value, 10);
+    const endBatch = parseInt(document.getElementById('m-add-end-batch').value, 10);
+
+    if (startBatch > endBatch) {
+      alert('Đợt bắt đầu không được lớn hơn đợt kết thúc!');
+      return;
+    }
+
+    try {
+      await api.createEnrollment({
+        student_id: selectedStudentId,
+        class_id: classObj.class_id,
+        start_batch_number: startBatch,
+        end_batch_number: endBatch,
+        status: 'ACTIVE'
+      });
+
+      showToast(`Đã thêm học sinh vào lớp ${classObj.class_name} thành công!`);
+      closeModal();
+      renderClassDetailView(document.getElementById('app-view'), classObj.class_id);
+    } catch (err) {
+      console.error('Error adding student to class:', err);
+      showToast('Lỗi ghi danh: ' + err.message, 'error');
+    }
+  };
+}
