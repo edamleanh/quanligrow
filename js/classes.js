@@ -3,7 +3,7 @@
    ============================================================================= */
 
 import { api } from './api.js';
-import { formatCurrency, formatDate, openModal, closeModal, showToast } from './utils.js';
+import { formatCurrency, formatDate, openModal, closeModal, showToast, removeVietnameseTones } from './utils.js';
 
 export async function renderClassesView(container, activeYear) {
   container.innerHTML = `
@@ -19,7 +19,7 @@ export async function renderClassesView(container, activeYear) {
     <div class="card" style="margin-bottom: 24px; padding: 16px 24px;">
       <div style="display: flex; gap: 16px; flex-wrap: wrap;">
         <div style="position: relative; flex: 1; min-width: 250px;">
-          <input type="text" id="search-class-input" class="form-control" placeholder="🔍 Tìm theo Tên lớp học (VD: Toán 6A, Anh Văn 9B)..." autocomplete="off">
+          <input type="text" id="search-class-input" class="form-control" placeholder="🔍 Tìm theo Tên lớp học (gõ 'toan' gợi ý 'Toán')..." autocomplete="off">
           <div id="search-class-suggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); max-height: 280px; overflow-y: auto; margin-top: 4px;"></div>
         </div>
         
@@ -49,7 +49,8 @@ export async function renderClassesView(container, activeYear) {
   };
 
   classSearchInput.oninput = (e) => {
-    const val = e.target.value.trim();
+    const rawVal = e.target.value.trim();
+    const cleanVal = removeVietnameseTones(rawVal);
     clearTimeout(classSearchTimer);
 
     // Live search grid refresh
@@ -57,14 +58,20 @@ export async function renderClassesView(container, activeYear) {
       loadClassesData(activeYear);
     }, 250);
 
-    // Proposal Autocomplete Dropdown
-    if (val.length >= 1) {
-      api.getClasses({ academic_year: activeYear, search: val, grade: document.getElementById('filter-class-grade').value })
-        .then(matches => {
+    // Proposal Autocomplete Dropdown with Accent Insensitivity
+    if (cleanVal.length >= 1) {
+      api.getClasses({ academic_year: activeYear, grade: document.getElementById('filter-class-grade').value })
+        .then(allClasses => {
+          const matches = (allClasses || []).filter(c => 
+            removeVietnameseTones(c.class_name).includes(cleanVal) ||
+            (c.subjects && removeVietnameseTones(c.subjects.subject_name).includes(cleanVal)) ||
+            (c.teachers && removeVietnameseTones(c.teachers.full_name).includes(cleanVal))
+          );
+
           if (!matches || matches.length === 0) {
             classSuggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy lớp học phù hợp</div>`;
           } else {
-            classSuggestionsBox.innerHTML = matches.slice(0, 6).map(c => `
+            classSuggestionsBox.innerHTML = matches.slice(0, 8).map(c => `
               <div class="class-suggestion-item" data-id="${c.class_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
                 <div>
                   <strong style="color: var(--teal-600);">${c.class_name}</strong> (Khối ${c.grade})
@@ -103,13 +110,22 @@ export async function renderClassesView(container, activeYear) {
 
 async function loadClassesData(activeYear) {
   const search = document.getElementById('search-class-input').value.trim();
+  const cleanSearch = removeVietnameseTones(search);
   const grade = document.getElementById('filter-class-grade').value;
 
   const grid = document.getElementById('classes-grid');
   grid.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px; grid-column: 1 / -1;">Đang tải dữ liệu...</div>`;
 
   try {
-    const classes = await api.getClasses({ academic_year: activeYear, search, grade });
+    const rawClasses = await api.getClasses({ academic_year: activeYear, grade });
+
+    const classes = cleanSearch
+      ? (rawClasses || []).filter(c => 
+          removeVietnameseTones(c.class_name).includes(cleanSearch) ||
+          (c.subjects && removeVietnameseTones(c.subjects.subject_name).includes(cleanSearch)) ||
+          (c.teachers && removeVietnameseTones(c.teachers.full_name).includes(cleanSearch))
+        )
+      : (rawClasses || []);
 
     if (classes.length === 0) {
       grid.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px; grid-column: 1 / -1;">Không có lớp học nào trong niên khóa ${activeYear}.</div>`;

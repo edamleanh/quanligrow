@@ -3,7 +3,7 @@
    ============================================================================= */
 
 import { api } from './api.js';
-import { formatCurrency, openModal, closeModal, showToast } from './utils.js';
+import { formatCurrency, openModal, closeModal, showToast, removeVietnameseTones } from './utils.js';
 
 export async function renderTeachersView(container) {
   container.innerHTML = `
@@ -19,7 +19,7 @@ export async function renderTeachersView(container) {
     <div class="card" style="margin-bottom: 24px; padding: 16px 24px;">
       <div style="display: flex; gap: 16px; flex-wrap: wrap;">
         <div style="position: relative; flex: 1; min-width: 250px;">
-          <input type="text" id="search-teacher-input" class="form-control" placeholder="🔍 Tìm theo Họ tên, SĐT, Mã giáo viên..." autocomplete="off">
+          <input type="text" id="search-teacher-input" class="form-control" placeholder="🔍 Tìm theo Họ tên, SĐT, Mã giáo viên (gõ 'hai' gợi ý 'Hải')..." autocomplete="off">
           <div id="search-teacher-suggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); max-height: 280px; overflow-y: auto; margin-top: 4px;"></div>
         </div>
         <button class="btn btn-secondary" id="btn-search-teacher">Tìm Kiếm</button>
@@ -60,7 +60,8 @@ export async function renderTeachersView(container) {
   };
 
   teacherSearchInput.oninput = (e) => {
-    const val = e.target.value.trim().toLowerCase();
+    const rawVal = e.target.value.trim();
+    const cleanVal = removeVietnameseTones(rawVal);
     clearTimeout(teacherSearchTimer);
 
     // Live search table refresh
@@ -68,19 +69,20 @@ export async function renderTeachersView(container) {
       loadTeachersData();
     }, 250);
 
-    // Proposal Autocomplete Dropdown
-    if (val.length >= 1) {
+    // Proposal Autocomplete Dropdown with Accent Insensitivity
+    if (cleanVal.length >= 1) {
       api.getTeachers().then(allTeachers => {
-        const matches = allTeachers.filter(t => 
-          t.full_name.toLowerCase().includes(val) ||
-          t.teacher_code.toLowerCase().includes(val) ||
-          (t.phone && t.phone.includes(val))
+        const matches = (allTeachers || []).filter(t => 
+          removeVietnameseTones(t.full_name).includes(cleanVal) ||
+          removeVietnameseTones(t.teacher_code).includes(cleanVal) ||
+          (t.phone && removeVietnameseTones(t.phone).includes(cleanVal)) ||
+          (t.subjects && removeVietnameseTones(t.subjects.subject_name).includes(cleanVal))
         );
 
         if (!matches || matches.length === 0) {
           teacherSuggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy giáo viên phù hợp</div>`;
         } else {
-          teacherSuggestionsBox.innerHTML = matches.slice(0, 6).map(t => `
+          teacherSuggestionsBox.innerHTML = matches.slice(0, 8).map(t => `
             <div class="teacher-suggestion-item" data-id="${t.teacher_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
               <div>
                 <strong style="color: var(--teal-600);">${t.teacher_code}</strong> - <strong>${t.full_name}</strong>
@@ -116,19 +118,21 @@ export async function renderTeachersView(container) {
 }
 
 async function loadTeachersData() {
-  const search = document.getElementById('search-teacher-input').value.trim().toLowerCase();
+  const search = document.getElementById('search-teacher-input').value.trim();
+  const cleanSearch = removeVietnameseTones(search);
   const tbody = document.getElementById('teacher-table-body');
 
   try {
-    let teachers = await api.getTeachers();
+    let rawTeachers = await api.getTeachers();
 
-    if (search) {
-      teachers = teachers.filter(t => 
-        t.full_name.toLowerCase().includes(search) ||
-        t.teacher_code.toLowerCase().includes(search) ||
-        (t.phone && t.phone.includes(search))
-      );
-    }
+    const teachers = cleanSearch
+      ? (rawTeachers || []).filter(t => 
+          removeVietnameseTones(t.full_name).includes(cleanSearch) ||
+          removeVietnameseTones(t.teacher_code).includes(cleanSearch) ||
+          (t.phone && removeVietnameseTones(t.phone).includes(cleanSearch)) ||
+          (t.subjects && removeVietnameseTones(t.subjects.subject_name).includes(cleanSearch))
+        )
+      : (rawTeachers || []);
 
     if (teachers.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">Không tìm thấy giáo viên nào.</td></tr>`;

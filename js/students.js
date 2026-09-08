@@ -3,7 +3,7 @@
    ============================================================================= */
 
 import { api } from './api.js';
-import { formatCurrency, formatDate, formatDateTime, openModal, closeModal, showToast } from './utils.js';
+import { formatCurrency, formatDate, formatDateTime, openModal, closeModal, showToast, removeVietnameseTones } from './utils.js';
 
 export async function renderStudentsView(container) {
   container.innerHTML = `
@@ -19,7 +19,7 @@ export async function renderStudentsView(container) {
     <div class="card" style="margin-bottom: 24px; padding: 16px 24px;">
       <div style="display: flex; gap: 16px; flex-wrap: wrap;">
         <div style="position: relative; flex: 1; min-width: 250px;">
-          <input type="text" id="search-student-input" class="form-control" placeholder="🔍 Tìm theo Họ tên, SĐT, Mã học sinh (VD: HS00120)..." autocomplete="off">
+          <input type="text" id="search-student-input" class="form-control" placeholder="🔍 Tìm theo Họ tên, SĐT, Mã học sinh (gõ 'hai' gợi ý 'Hải')..." autocomplete="off">
           <div id="search-student-suggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); max-height: 280px; overflow-y: auto; margin-top: 4px;"></div>
         </div>
         
@@ -68,7 +68,8 @@ export async function renderStudentsView(container) {
   };
 
   searchInput.oninput = (e) => {
-    const val = e.target.value.trim();
+    const rawVal = e.target.value.trim();
+    const cleanVal = removeVietnameseTones(rawVal);
     clearTimeout(searchTimer);
 
     // Live search table refresh (250ms debounce)
@@ -76,14 +77,20 @@ export async function renderStudentsView(container) {
       loadStudentsData();
     }, 250);
 
-    // Proposal Autocomplete Dropdown
-    if (val.length >= 1) {
-      api.getStudents({ search: val, grade: document.getElementById('filter-grade').value })
-        .then(({ data: matches }) => {
+    // Proposal Autocomplete Dropdown with Accent Insensitivity
+    if (cleanVal.length >= 1) {
+      api.getStudents({ grade: document.getElementById('filter-grade').value })
+        .then(({ data: allData }) => {
+          const matches = (allData || []).filter(s => 
+            removeVietnameseTones(s.full_name).includes(cleanVal) ||
+            removeVietnameseTones(s.student_code).includes(cleanVal) ||
+            (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
+          );
+
           if (!matches || matches.length === 0) {
             suggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy đề xuất phù hợp</div>`;
           } else {
-            suggestionsBox.innerHTML = matches.slice(0, 6).map(s => `
+            suggestionsBox.innerHTML = matches.slice(0, 8).map(s => `
               <div class="student-suggestion-item" data-id="${s.student_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
                 <div>
                   <strong style="color: var(--teal-600);">${s.student_code}</strong> - <strong>${s.full_name}</strong>
@@ -122,13 +129,22 @@ export async function renderStudentsView(container) {
 
 async function loadStudentsData() {
   const search = document.getElementById('search-student-input').value.trim();
+  const cleanSearch = removeVietnameseTones(search);
   const grade = document.getElementById('filter-grade').value;
 
   const tbody = document.getElementById('student-table-body');
   tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">Đang tải dữ liệu...</td></tr>`;
 
   try {
-    const { data: students, count } = await api.getStudents({ search, grade });
+    const { data: rawStudents } = await api.getStudents({ grade });
+
+    const students = cleanSearch
+      ? (rawStudents || []).filter(s =>
+          removeVietnameseTones(s.full_name).includes(cleanSearch) ||
+          removeVietnameseTones(s.student_code).includes(cleanSearch) ||
+          (s.phone && removeVietnameseTones(s.phone).includes(cleanSearch))
+        )
+      : (rawStudents || []);
 
     if (students.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">Không tìm thấy học sinh nào phù hợp.</td></tr>`;
