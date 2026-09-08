@@ -109,37 +109,35 @@ export function showClassModal(classObj = null, activeYear = '2025-2026') {
             </select>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Môn Học (*)</label>
-            <select id="m-class-subject" class="form-control" required>
-              ${subjects.map(s => `<option value="${s.subject_id}" ${classObj && classObj.subject_id === s.subject_id ? 'selected' : ''}>${s.subject_name}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <div class="form-group">
-            <label class="form-label">Giáo Viên Phụ Trách</label>
-            <select id="m-class-teacher" class="form-control">
-              <option value="">-- Chưa Phân Công --</option>
-              ${teachers.map(t => `<option value="${t.teacher_id}" ${classObj && classObj.teacher_id === t.teacher_id ? 'selected' : ''}>${t.full_name} (${t.teacher_code})</option>`).join('')}
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Học Phí Gốc Cho 1 Đợt (VNĐ)</label>
-            <input type="number" id="m-class-fee" class="form-control" value="${classObj ? classObj.default_fee_rate : 0}" placeholder="Ví dụ: 300000">
-          </div>
-        </div>
-      </form>
-    `;
-
-    const footerHtml = `
-      <button class="btn btn-secondary" onclick="window.closeModal()">Hủy Bỏ</button>
-      <button class="btn btn-primary" id="btn-save-class-modal">${isEdit ? 'Cập Nhật' : 'Tạo Lớp & Tự Động Sinh 12 Đợt'}</button>
-    `;
-
     openModal(title, bodyHtml, footerHtml);
+
+    const subjectSelect = document.getElementById('m-class-subject');
+    const teacherSelect = document.getElementById('m-class-teacher');
+    const feeInput = document.getElementById('m-class-fee');
+
+    // Function to update teacher list and default fee rate based on subject
+    const updateTeacherDropdown = (selectedSubId) => {
+      const filteredTeachers = teachers.filter(t => t.specialization_subject_id == selectedSubId);
+      teacherSelect.innerHTML = `<option value="">-- Chưa Phân Công --</option>` +
+        filteredTeachers.map(t => `<option value="${t.teacher_id}" ${classObj && classObj.teacher_id === t.teacher_id ? 'selected' : ''}>${t.full_name} (${t.teacher_code})</option>`).join('');
+
+      // Auto set default fee rate if creating new class
+      if (!isEdit && feeInput) {
+        const subObj = subjects.find(s => s.subject_id == selectedSubId);
+        if (subObj && subObj.subject_code === 'VAN') {
+          feeInput.value = 300000;
+        } else {
+          feeInput.value = 350000;
+        }
+      }
+    };
+
+    const initialSubId = subjectSelect.value;
+    if (initialSubId) updateTeacherDropdown(initialSubId);
+
+    subjectSelect.onchange = (e) => {
+      updateTeacherDropdown(e.target.value);
+    };
 
     document.getElementById('btn-save-class-modal').onclick = async () => {
       const className = document.getElementById('m-class-name').value.trim();
@@ -258,7 +256,7 @@ export async function renderClassDetailView(container, classId) {
                   <td>${b.teachers ? b.teachers.full_name : '<span style="color: var(--text-light)">Theo GV lớp</span>'}</td>
                   <td>
                     <div style="display: flex; gap: 8px;">
-                      <button class="btn btn-secondary btn-sm" onclick="window.showEditBatchModal('${b.batch_id}', '${b.batch_name}', ${b.fee_rate}, '${b.status}', '${b.teacher_id || ''}')">
+                      <button class="btn btn-secondary btn-sm" onclick="window.showEditBatchModal('${b.batch_id}', '${b.batch_name}', ${b.fee_rate}, '${b.status}', '${b.teacher_id || ''}', ${classObj.subject_id})">
                         ✏️ Sửa Đợt
                       </button>
                       ${b.status !== 'DANG_HOC' ? `
@@ -348,9 +346,10 @@ export async function renderClassDetailView(container, classId) {
 }
 
 // Modal to Edit Batch Info & Assign Batch Teacher
-window.showEditBatchModal = function(batchId, batchName, feeRate, status, teacherId) {
+window.showEditBatchModal = function(batchId, batchName, feeRate, status, teacherId, subjectId) {
   api.getTeachers().then(teachers => {
     const title = `Chỉnh Sửa Đợt Học (${batchName})`;
+    const filteredTeachers = subjectId ? teachers.filter(t => t.specialization_subject_id == subjectId) : teachers;
 
     const bodyHtml = `
       <form id="form-edit-batch">
@@ -376,10 +375,10 @@ window.showEditBatchModal = function(batchId, batchName, feeRate, status, teache
         </div>
 
         <div class="form-group">
-          <label class="form-label">Giáo Viên Phụ Trách Đợt Này</label>
+          <label class="form-label">Giáo Viên Phụ Trách Đợt Này (Chỉ hiện GV đúng chuyên môn)</label>
           <select id="m-batch-teacher" class="form-control">
             <option value="">-- Dùng GV mặc định của lớp --</option>
-            ${teachers.map(t => `<option value="${t.teacher_id}" ${teacherId === t.teacher_id ? 'selected' : ''}>${t.full_name} (${t.teacher_code})</option>`).join('')}
+            ${filteredTeachers.map(t => `<option value="${t.teacher_id}" ${teacherId === t.teacher_id ? 'selected' : ''}>${t.full_name} (${t.teacher_code})</option>`).join('')}
           </select>
         </div>
       </form>
