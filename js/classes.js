@@ -128,6 +128,7 @@ export function showClassModal(classObj = null, activeYear = '2025-2026') {
           <div class="form-group">
             <label class="form-label">Học Phí Gốc Cho 1 Đợt (VNĐ)</label>
             <input type="number" id="m-class-fee" class="form-control" value="${classObj ? classObj.default_fee_rate : 350000}" placeholder="Ví dụ: 350000">
+            <small style="color: var(--teal-600); font-weight: 600; margin-top: 4px; display: block;">💡 Quy định mặc định: Môn Văn = 300.000đ/đợt, Các môn khác = 350.000đ/đợt (Tự động áp dụng khi chọn môn)</small>
           </div>
         </div>
       </form>
