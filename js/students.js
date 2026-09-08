@@ -71,48 +71,51 @@ export async function renderStudentsView(container) {
     const rawVal = e.target.value.trim();
     const cleanVal = removeVietnameseTones(rawVal);
     clearTimeout(searchTimer);
+    suggestionsBox.style.display = 'none';
 
-    // Live search table refresh (250ms debounce)
+    if (cleanVal.length === 0) {
+      loadStudentsData();
+      return;
+    }
+
+    // Wait until user finishes typing (450ms pause)
     searchTimer = setTimeout(() => {
       loadStudentsData();
-    }, 250);
 
-    // Proposal Autocomplete Dropdown with Accent Insensitivity
-    if (cleanVal.length >= 1) {
-      api.getStudents({ grade: document.getElementById('filter-grade').value })
-        .then(({ data: allData }) => {
-          const matches = (allData || []).filter(s => 
-            removeVietnameseTones(s.full_name).includes(cleanVal) ||
-            removeVietnameseTones(s.student_code).includes(cleanVal) ||
-            (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
-          );
+      if (cleanVal.length >= 1) {
+        api.getStudents({ grade: document.getElementById('filter-grade').value })
+          .then(({ data: allData }) => {
+            const matches = (allData || []).filter(s => 
+              removeVietnameseTones(s.full_name).includes(cleanVal) ||
+              removeVietnameseTones(s.student_code).includes(cleanVal) ||
+              (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
+            );
 
-          if (!matches || matches.length === 0) {
-            suggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy đề xuất phù hợp</div>`;
-          } else {
-            suggestionsBox.innerHTML = matches.slice(0, 8).map(s => `
-              <div class="student-suggestion-item" data-id="${s.student_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
-                <div>
-                  <strong style="color: var(--teal-600);">${s.student_code}</strong> - <strong>${s.full_name}</strong>
-                  <div style="font-size: 12px; color: var(--text-muted);">${s.phone ? `📞 ${s.phone}` : 'Chưa có SĐT'} | Khối ${s.grade}</div>
+            if (!matches || matches.length === 0) {
+              suggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy đề xuất phù hợp</div>`;
+            } else {
+              suggestionsBox.innerHTML = matches.slice(0, 8).map(s => `
+                <div class="student-suggestion-item" data-id="${s.student_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+                  <div>
+                    <strong style="color: var(--teal-600);">${s.student_code}</strong> - <strong>${s.full_name}</strong>
+                    <div style="font-size: 12px; color: var(--text-muted);">${s.phone ? `📞 ${s.phone}` : 'Chưa có SĐT'} | Khối ${s.grade}</div>
+                  </div>
+                  <span class="badge badge-active" style="font-size: 11px;">Xem Hồ Sơ ➔</span>
                 </div>
-                <span class="badge badge-active" style="font-size: 11px;">Xem Hồ Sơ ➔</span>
-              </div>
-            `).join('');
+              `).join('');
 
-            suggestionsBox.querySelectorAll('.student-suggestion-item').forEach(el => {
-              el.onclick = () => {
-                const sid = el.getAttribute('data-id');
-                suggestionsBox.style.display = 'none';
-                window.location.hash = `#/students/${sid}`;
-              };
-            });
-          }
-          suggestionsBox.style.display = 'block';
-        }).catch(err => console.error('Error getting student proposals:', err));
-    } else {
-      suggestionsBox.style.display = 'none';
-    }
+              suggestionsBox.querySelectorAll('.student-suggestion-item').forEach(el => {
+                el.onclick = () => {
+                  const sid = el.getAttribute('data-id');
+                  suggestionsBox.style.display = 'none';
+                  window.location.hash = `#/students/${sid}`;
+                };
+              });
+            }
+            suggestionsBox.style.display = 'block';
+          }).catch(err => console.error('Error getting student proposals:', err));
+      }
+    }, 450);
   };
 
   // Close suggestions box on click outside

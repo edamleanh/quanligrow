@@ -52,48 +52,51 @@ export async function renderClassesView(container, activeYear) {
     const rawVal = e.target.value.trim();
     const cleanVal = removeVietnameseTones(rawVal);
     clearTimeout(classSearchTimer);
+    classSuggestionsBox.style.display = 'none';
 
-    // Live search grid refresh
+    if (cleanVal.length === 0) {
+      loadClassesData(activeYear);
+      return;
+    }
+
+    // Wait until user finishes typing (450ms pause)
     classSearchTimer = setTimeout(() => {
       loadClassesData(activeYear);
-    }, 250);
 
-    // Proposal Autocomplete Dropdown with Accent Insensitivity
-    if (cleanVal.length >= 1) {
-      api.getClasses({ academic_year: activeYear, grade: document.getElementById('filter-class-grade').value })
-        .then(allClasses => {
-          const matches = (allClasses || []).filter(c => 
-            removeVietnameseTones(c.class_name).includes(cleanVal) ||
-            (c.subjects && removeVietnameseTones(c.subjects.subject_name).includes(cleanVal)) ||
-            (c.teachers && removeVietnameseTones(c.teachers.full_name).includes(cleanVal))
-          );
+      if (cleanVal.length >= 1) {
+        api.getClasses({ academic_year: activeYear, grade: document.getElementById('filter-class-grade').value })
+          .then(allClasses => {
+            const matches = (allClasses || []).filter(c => 
+              removeVietnameseTones(c.class_name).includes(cleanVal) ||
+              (c.subjects && removeVietnameseTones(c.subjects.subject_name).includes(cleanVal)) ||
+              (c.teachers && removeVietnameseTones(c.teachers.full_name).includes(cleanVal))
+            );
 
-          if (!matches || matches.length === 0) {
-            classSuggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy lớp học phù hợp</div>`;
-          } else {
-            classSuggestionsBox.innerHTML = matches.slice(0, 8).map(c => `
-              <div class="class-suggestion-item" data-id="${c.class_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
-                <div>
-                  <strong style="color: var(--teal-600);">${c.class_name}</strong> (Khối ${c.grade})
-                  <div style="font-size: 12px; color: var(--text-muted);">Môn: ${c.subjects ? c.subjects.subject_name : '-'} | GV: ${c.teachers ? c.teachers.full_name : 'Chưa phân công'}</div>
+            if (!matches || matches.length === 0) {
+              classSuggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy lớp học phù hợp</div>`;
+            } else {
+              classSuggestionsBox.innerHTML = matches.slice(0, 8).map(c => `
+                <div class="class-suggestion-item" data-id="${c.class_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+                  <div>
+                    <strong style="color: var(--teal-600);">${c.class_name}</strong> (Khối ${c.grade})
+                    <div style="font-size: 12px; color: var(--text-muted);">Môn: ${c.subjects ? c.subjects.subject_name : '-'} | GV: ${c.teachers ? c.teachers.full_name : 'Chưa phân công'}</div>
+                  </div>
+                  <span class="badge badge-active" style="font-size: 11px;">Xem 12 Đợt ➔</span>
                 </div>
-                <span class="badge badge-active" style="font-size: 11px;">Xem 12 Đợt ➔</span>
-              </div>
-            `).join('');
+              `).join('');
 
-            classSuggestionsBox.querySelectorAll('.class-suggestion-item').forEach(el => {
-              el.onclick = () => {
-                const cid = el.getAttribute('data-id');
-                classSuggestionsBox.style.display = 'none';
-                window.location.hash = `#/classes/${cid}`;
-              };
-            });
-          }
-          classSuggestionsBox.style.display = 'block';
-        }).catch(err => console.error('Error getting class proposals:', err));
-    } else {
-      classSuggestionsBox.style.display = 'none';
-    }
+              classSuggestionsBox.querySelectorAll('.class-suggestion-item').forEach(el => {
+                el.onclick = () => {
+                  const cid = el.getAttribute('data-id');
+                  classSuggestionsBox.style.display = 'none';
+                  window.location.hash = `#/classes/${cid}`;
+                };
+              });
+            }
+            classSuggestionsBox.style.display = 'block';
+          }).catch(err => console.error('Error getting class proposals:', err));
+      }
+    }, 450);
   };
 
   // Close dropdown on click outside
@@ -591,45 +594,50 @@ export function showAddStudentToClassModal(classObj) {
   const suggs = document.getElementById('m-student-class-suggestions');
   const banner = document.getElementById('m-selected-student-banner');
 
+  let modalSearchTimer = null;
   input.oninput = (e) => {
     const rawVal = e.target.value.trim();
     const cleanVal = removeVietnameseTones(rawVal);
+    clearTimeout(modalSearchTimer);
+    suggs.style.display = 'none';
 
-    if (cleanVal.length >= 1) {
-      api.getStudents().then(({ data: allStudents }) => {
-        const matches = (allStudents || []).filter(s =>
-          removeVietnameseTones(s.full_name).includes(cleanVal) ||
-          removeVietnameseTones(s.student_code).includes(cleanVal) ||
-          (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
-        );
+    if (cleanVal.length === 0) return;
 
-        if (!matches || matches.length === 0) {
-          suggs.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy học sinh nào</div>`;
-        } else {
-          suggs.innerHTML = matches.slice(0, 6).map(s => `
-            <div class="sugg-item" data-id="${s.student_id}" data-name="${s.full_name}" data-code="${s.student_code}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
-              <strong style="color: var(--teal-600);">${s.student_code}</strong> - <strong>${s.full_name}</strong> (Khối ${s.grade})
-            </div>
-          `).join('');
+    modalSearchTimer = setTimeout(() => {
+      if (cleanVal.length >= 1) {
+        api.getStudents().then(({ data: allStudents }) => {
+          const matches = (allStudents || []).filter(s =>
+            removeVietnameseTones(s.full_name).includes(cleanVal) ||
+            removeVietnameseTones(s.student_code).includes(cleanVal) ||
+            (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
+          );
 
-          suggs.querySelectorAll('.sugg-item').forEach(el => {
-            el.onclick = () => {
-              selectedStudentId = el.getAttribute('data-id');
-              const name = el.getAttribute('data-name');
-              const code = el.getAttribute('data-code');
+          if (!matches || matches.length === 0) {
+            suggs.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy học sinh nào</div>`;
+          } else {
+            suggs.innerHTML = matches.slice(0, 6).map(s => `
+              <div class="sugg-item" data-id="${s.student_id}" data-name="${s.full_name}" data-code="${s.student_code}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+                <strong style="color: var(--teal-600);">${s.student_code}</strong> - <strong>${s.full_name}</strong> (Khối ${s.grade})
+              </div>
+            `).join('');
 
-              input.value = `${name} (${code})`;
-              suggs.style.display = 'none';
-              banner.style.display = 'block';
-              banner.innerHTML = `✅ Đã chọn: <strong>${name} (${code})</strong>`;
-            };
-          });
-        }
-        suggs.style.display = 'block';
-      });
-    } else {
-      suggs.style.display = 'none';
-    }
+            suggs.querySelectorAll('.sugg-item').forEach(el => {
+              el.onclick = () => {
+                selectedStudentId = el.getAttribute('data-id');
+                const name = el.getAttribute('data-name');
+                const code = el.getAttribute('data-code');
+
+                input.value = `${name} (${code})`;
+                suggs.style.display = 'none';
+                banner.style.display = 'block';
+                banner.innerHTML = `✅ Đã chọn: <strong>${name} (${code})</strong>`;
+              };
+            });
+          }
+          suggs.style.display = 'block';
+        });
+      }
+    }, 450);
   };
 
   document.getElementById('btn-save-add-student-to-class').onclick = async () => {

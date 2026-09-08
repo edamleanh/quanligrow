@@ -63,48 +63,51 @@ export async function renderTeachersView(container) {
     const rawVal = e.target.value.trim();
     const cleanVal = removeVietnameseTones(rawVal);
     clearTimeout(teacherSearchTimer);
+    teacherSuggestionsBox.style.display = 'none';
 
-    // Live search table refresh
+    if (cleanVal.length === 0) {
+      loadTeachersData();
+      return;
+    }
+
+    // Wait until user finishes typing (450ms pause)
     teacherSearchTimer = setTimeout(() => {
       loadTeachersData();
-    }, 250);
 
-    // Proposal Autocomplete Dropdown with Accent Insensitivity
-    if (cleanVal.length >= 1) {
-      api.getTeachers().then(allTeachers => {
-        const matches = (allTeachers || []).filter(t => 
-          removeVietnameseTones(t.full_name).includes(cleanVal) ||
-          removeVietnameseTones(t.teacher_code).includes(cleanVal) ||
-          (t.phone && removeVietnameseTones(t.phone).includes(cleanVal)) ||
-          (t.subjects && removeVietnameseTones(t.subjects.subject_name).includes(cleanVal))
-        );
+      if (cleanVal.length >= 1) {
+        api.getTeachers().then(allTeachers => {
+          const matches = (allTeachers || []).filter(t => 
+            removeVietnameseTones(t.full_name).includes(cleanVal) ||
+            removeVietnameseTones(t.teacher_code).includes(cleanVal) ||
+            (t.phone && removeVietnameseTones(t.phone).includes(cleanVal)) ||
+            (t.subjects && removeVietnameseTones(t.subjects.subject_name).includes(cleanVal))
+          );
 
-        if (!matches || matches.length === 0) {
-          teacherSuggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy giáo viên phù hợp</div>`;
-        } else {
-          teacherSuggestionsBox.innerHTML = matches.slice(0, 8).map(t => `
-            <div class="teacher-suggestion-item" data-id="${t.teacher_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
-              <div>
-                <strong style="color: var(--teal-600);">${t.teacher_code}</strong> - <strong>${t.full_name}</strong>
-                <div style="font-size: 12px; color: var(--text-muted);">Môn: ${t.subjects ? t.subjects.subject_name : 'Chưa phân'} | SĐT: ${t.phone || 'Chưa có'}</div>
+          if (!matches || matches.length === 0) {
+            teacherSuggestionsBox.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy giáo viên phù hợp</div>`;
+          } else {
+            teacherSuggestionsBox.innerHTML = matches.slice(0, 8).map(t => `
+              <div class="teacher-suggestion-item" data-id="${t.teacher_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+                <div>
+                  <strong style="color: var(--teal-600);">${t.teacher_code}</strong> - <strong>${t.full_name}</strong>
+                  <div style="font-size: 12px; color: var(--text-muted);">Môn: ${t.subjects ? t.subjects.subject_name : 'Chưa phân'} | SĐT: ${t.phone || 'Chưa có'}</div>
+                </div>
+                <span class="badge badge-active" style="font-size: 11px;">Xem Lương/Lớp ➔</span>
               </div>
-              <span class="badge badge-active" style="font-size: 11px;">Xem Lương/Lớp ➔</span>
-            </div>
-          `).join('');
+            `).join('');
 
-          teacherSuggestionsBox.querySelectorAll('.teacher-suggestion-item').forEach(el => {
-            el.onclick = () => {
-              const tid = el.getAttribute('data-id');
-              teacherSuggestionsBox.style.display = 'none';
-              window.location.hash = `#/teachers/${tid}`;
-            };
-          });
-        }
-        teacherSuggestionsBox.style.display = 'block';
-      }).catch(err => console.error('Error getting teacher proposals:', err));
-    } else {
-      teacherSuggestionsBox.style.display = 'none';
-    }
+            teacherSuggestionsBox.querySelectorAll('.teacher-suggestion-item').forEach(el => {
+              el.onclick = () => {
+                const tid = el.getAttribute('data-id');
+                teacherSuggestionsBox.style.display = 'none';
+                window.location.hash = `#/teachers/${tid}`;
+              };
+            });
+          }
+          teacherSuggestionsBox.style.display = 'block';
+        }).catch(err => console.error('Error getting teacher proposals:', err));
+      }
+    }, 450);
   };
 
   // Close dropdown on click outside

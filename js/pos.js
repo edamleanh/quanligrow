@@ -3,7 +3,7 @@
    ============================================================================= */
 
 import { api } from './api.js';
-import { formatCurrency, formatDateTime, openModal, closeModal, showToast } from './utils.js';
+import { formatCurrency, formatDateTime, openModal, closeModal, showToast, removeVietnameseTones } from './utils.js';
 
 export async function renderPOSView(container, targetStudentId = null) {
   container.innerHTML = `
@@ -149,6 +149,17 @@ export async function renderPOSView(container, targetStudentId = null) {
     loadDebtReport();
   };
 
+  const debtInput = document.getElementById('debt-search-input');
+  if (debtInput) {
+    let debtSearchTimer = null;
+    debtInput.oninput = () => {
+      clearTimeout(debtSearchTimer);
+      debtSearchTimer = setTimeout(() => {
+        loadDebtReport();
+      }, 450);
+    };
+  }
+
   document.getElementById('btn-search-debt').onclick = () => loadDebtReport();
 
   document.getElementById('pos-receipt-type').onchange = (e) => {
@@ -165,40 +176,59 @@ let selectedPaymentItemsState = new Map(); // key: "CLASS_ID|BATCH_ID" -> { clas
 async function setupStudentAutocomplete(targetStudentId = null) {
   const input = document.getElementById('pos-student-search-input');
   const dropdown = document.getElementById('pos-student-dropdown');
+  let posSearchTimer = null;
 
-  input.oninput = async () => {
+  input.oninput = () => {
     const val = input.value.trim();
-    if (val.length < 1) {
-      dropdown.style.display = 'none';
+    const cleanVal = removeVietnameseTones(val);
+    clearTimeout(posSearchTimer);
+    dropdown.style.display = 'none';
+
+    if (cleanVal.length < 1) {
       return;
     }
 
-    try {
-      const { data: students } = await api.getStudents({ search: val });
-      if (students.length === 0) {
-        dropdown.innerHTML = `<div style="padding: 12px; color: var(--text-muted); font-size: 13px;">Không tìm thấy học sinh.</div>`;
-      } else {
-        dropdown.innerHTML = students.slice(0, 8).map(s => `
-          <div class="student-select-item" data-id="${s.student_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between;">
-            <span><strong>${s.full_name}</strong> (${s.student_code})</span>
-            <span style="color: var(--teal-600); font-weight: 600;">Khối ${s.grade}</span>
-          </div>
-        `).join('');
+    // Wait until user finishes typing (450ms pause)
+    posSearchTimer = setTimeout(async () => {
+      try {
+        const { data: students } = await api.getStudents();
+        const matches = (students || []).filter(s =>
+          removeVietnameseTones(s.full_name).includes(cleanVal) ||
+          removeVietnameseTones(s.student_code).includes(cleanVal) ||
+          (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
+        );
 
-        dropdown.querySelectorAll('.student-select-item').forEach(el => {
-          el.onclick = () => {
-            const sid = el.getAttribute('data-id');
-            dropdown.style.display = 'none';
-            input.value = '';
-            selectStudentForPOS(sid);
-          };
-        });
+        if (!matches || matches.length === 0) {
+          dropdown.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;">Không tìm thấy học sinh phù hợp.</div>`;
+        } else {
+          dropdown.innerHTML = matches.slice(0, 8).map(s => `
+            <div class="student-select-item" data-id="${s.student_id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; display: flex; justify-content: space-between; transition: background 0.15s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+              <span><strong style="color: var(--teal-600);">${s.student_code}</strong> - <strong>${s.full_name}</strong></span>
+              <span style="color: var(--text-muted); font-weight: 600;">Khối ${s.grade}</span>
+            </div>
+          `).join('');
+
+          dropdown.querySelectorAll('.student-select-item').forEach(el => {
+            el.onclick = () => {
+              const sid = el.getAttribute('data-id');
+              dropdown.style.display = 'none';
+              input.value = '';
+              selectStudentForPOS(sid);
+            };
+          });
+        }
+        dropdown.style.display = 'block';
+      } catch (err) {
+        console.error('Error searching students for POS:', err);
       }
-      dropdown.style.display = 'block';
-    } catch (err) {
-      console.error('Error searching students for POS:', err);
-    }
+    }, 450);
   };
+
+  document.addEventListener('click', (evt) => {
+    if (dropdown && !input.contains(evt.target) && !dropdown.contains(evt.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
 
   if (targetStudentId) {
     selectStudentForPOS(targetStudentId);
@@ -493,18 +523,19 @@ function showPrintableReceiptModal(receipt, student, items) {
 }
 
 async function loadDebtReport() {
-  const search = document.getElementById('debt-search-input').value.trim().toLowerCase();
+  const search = document.getElementById('debt-search-input').value.trim();
+  const cleanSearch = removeVietnameseTones(search);
   const tbody = document.getElementById('debt-report-tbody');
 
   try {
     let debtSummary = await api.getDebtSummary();
     let unpaidList = (debtSummary || []).filter(d => Number(d.remaining_debt) > 0);
 
-    if (search) {
+    if (cleanSearch) {
       unpaidList = unpaidList.filter(d => 
-        d.student_name.toLowerCase().includes(search) ||
-        d.student_code.toLowerCase().includes(search) ||
-        (d.student_phone && d.student_phone.includes(search))
+        removeVietnameseTones(d.student_name).includes(cleanSearch) ||
+        removeVietnameseTones(d.student_code).includes(cleanSearch) ||
+        (d.student_phone && removeVietnameseTones(d.student_phone).includes(cleanSearch))
       );
     }
 
