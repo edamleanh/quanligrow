@@ -3,7 +3,7 @@
    ============================================================================= */
 
 import { api } from './api.js';
-import { formatCurrency, openModal, closeModal, showToast, removeVietnameseTones } from './utils.js';
+import { formatCurrency, openModal, closeModal, showToast, removeVietnameseTones, matchSearchTokens } from './utils.js';
 
 export async function renderTeachersView(container) {
   container.innerHTML = `
@@ -77,10 +77,7 @@ export async function renderTeachersView(container) {
       if (cleanVal.length >= 1) {
         api.getTeachers().then(allTeachers => {
           const matches = (allTeachers || []).filter(t => 
-            removeVietnameseTones(t.full_name).includes(cleanVal) ||
-            removeVietnameseTones(t.teacher_code).includes(cleanVal) ||
-            (t.phone && removeVietnameseTones(t.phone).includes(cleanVal)) ||
-            (t.subjects && removeVietnameseTones(t.subjects.subject_name).includes(cleanVal))
+            matchSearchTokens(`${t.full_name} ${t.teacher_code} ${t.phone || ''} ${t.subjects ? t.subjects.subject_name : ''}`, rawVal)
           );
 
           if (!matches || matches.length === 0) {
@@ -130,10 +127,7 @@ async function loadTeachersData() {
 
     const teachers = cleanSearch
       ? (rawTeachers || []).filter(t => 
-          removeVietnameseTones(t.full_name).includes(cleanSearch) ||
-          removeVietnameseTones(t.teacher_code).includes(cleanSearch) ||
-          (t.phone && removeVietnameseTones(t.phone).includes(cleanSearch)) ||
-          (t.subjects && removeVietnameseTones(t.subjects.subject_name).includes(cleanSearch))
+          matchSearchTokens(`${t.full_name} ${t.teacher_code} ${t.phone || ''} ${t.subjects ? t.subjects.subject_name : ''}`, search)
         )
       : (rawTeachers || []);
 

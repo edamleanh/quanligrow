@@ -3,7 +3,7 @@
    ============================================================================= */
 
 import { api } from './api.js';
-import { formatCurrency, formatDate, formatDateTime, openModal, closeModal, showToast, removeVietnameseTones } from './utils.js';
+import { formatCurrency, formatDate, formatDateTime, openModal, closeModal, showToast, removeVietnameseTones, matchSearchTokens } from './utils.js';
 
 export async function renderStudentsView(container) {
   container.innerHTML = `
@@ -86,9 +86,7 @@ export async function renderStudentsView(container) {
         api.getStudents({ grade: document.getElementById('filter-grade').value })
           .then(({ data: allData }) => {
             const matches = (allData || []).filter(s => 
-              removeVietnameseTones(s.full_name).includes(cleanVal) ||
-              removeVietnameseTones(s.student_code).includes(cleanVal) ||
-              (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
+              matchSearchTokens(`${s.full_name} ${s.student_code} ${s.phone || ''}`, rawVal)
             );
 
             if (!matches || matches.length === 0) {
@@ -146,9 +144,7 @@ async function loadStudentsData() {
 
     const students = cleanSearch
       ? (rawStudents || []).filter(s =>
-          removeVietnameseTones(s.full_name).includes(cleanSearch) ||
-          removeVietnameseTones(s.student_code).includes(cleanSearch) ||
-          (s.phone && removeVietnameseTones(s.phone).includes(cleanSearch))
+          matchSearchTokens(`${s.full_name} ${s.student_code} ${s.phone || ''}`, search)
         )
       : (rawStudents || []);
 

@@ -3,7 +3,7 @@
    ============================================================================= */
 
 import { api } from './api.js';
-import { formatCurrency, formatDateTime, openModal, closeModal, showToast, removeVietnameseTones } from './utils.js';
+import { formatCurrency, formatDateTime, openModal, closeModal, showToast, removeVietnameseTones, matchSearchTokens } from './utils.js';
 
 export async function renderPOSView(container, targetStudentId = null) {
   container.innerHTML = `
@@ -193,9 +193,7 @@ async function setupStudentAutocomplete(targetStudentId = null) {
       try {
         const { data: students } = await api.getStudents();
         const matches = (students || []).filter(s =>
-          removeVietnameseTones(s.full_name).includes(cleanVal) ||
-          removeVietnameseTones(s.student_code).includes(cleanVal) ||
-          (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
+          matchSearchTokens(`${s.full_name} ${s.student_code} ${s.phone || ''}`, val)
         );
 
         if (!matches || matches.length === 0) {
@@ -533,9 +531,7 @@ async function loadDebtReport() {
 
     if (cleanSearch) {
       unpaidList = unpaidList.filter(d => 
-        removeVietnameseTones(d.student_name).includes(cleanSearch) ||
-        removeVietnameseTones(d.student_code).includes(cleanSearch) ||
-        (d.student_phone && removeVietnameseTones(d.student_phone).includes(cleanSearch))
+        matchSearchTokens(`${d.student_name} ${d.student_code} ${d.student_phone || ''} ${d.class_name || ''}`, search)
       );
     }
 

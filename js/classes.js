@@ -3,7 +3,7 @@
    ============================================================================= */
 
 import { api } from './api.js';
-import { formatCurrency, formatDate, openModal, closeModal, showToast, removeVietnameseTones } from './utils.js';
+import { formatCurrency, formatDate, openModal, closeModal, showToast, removeVietnameseTones, matchSearchTokens } from './utils.js';
 
 export async function renderClassesView(container, activeYear) {
   container.innerHTML = `
@@ -67,9 +67,7 @@ export async function renderClassesView(container, activeYear) {
         api.getClasses({ academic_year: activeYear, grade: document.getElementById('filter-class-grade').value })
           .then(allClasses => {
             const matches = (allClasses || []).filter(c => 
-              removeVietnameseTones(c.class_name).includes(cleanVal) ||
-              (c.subjects && removeVietnameseTones(c.subjects.subject_name).includes(cleanVal)) ||
-              (c.teachers && removeVietnameseTones(c.teachers.full_name).includes(cleanVal))
+              matchSearchTokens(`${c.class_name} ${c.subjects ? c.subjects.subject_name : ''} ${c.teachers ? c.teachers.full_name : ''}`, rawVal)
             );
 
             if (!matches || matches.length === 0) {
@@ -124,9 +122,7 @@ async function loadClassesData(activeYear) {
 
     const classes = cleanSearch
       ? (rawClasses || []).filter(c => 
-          removeVietnameseTones(c.class_name).includes(cleanSearch) ||
-          (c.subjects && removeVietnameseTones(c.subjects.subject_name).includes(cleanSearch)) ||
-          (c.teachers && removeVietnameseTones(c.teachers.full_name).includes(cleanSearch))
+          matchSearchTokens(`${c.class_name} ${c.subjects ? c.subjects.subject_name : ''} ${c.teachers ? c.teachers.full_name : ''}`, search)
         )
       : (rawClasses || []);
 
@@ -607,9 +603,7 @@ export function showAddStudentToClassModal(classObj) {
       if (cleanVal.length >= 1) {
         api.getStudents().then(({ data: allStudents }) => {
           const matches = (allStudents || []).filter(s =>
-            removeVietnameseTones(s.full_name).includes(cleanVal) ||
-            removeVietnameseTones(s.student_code).includes(cleanVal) ||
-            (s.phone && removeVietnameseTones(s.phone).includes(cleanVal))
+            matchSearchTokens(`${s.full_name} ${s.student_code} ${s.phone || ''}`, rawVal)
           );
 
           if (!matches || matches.length === 0) {

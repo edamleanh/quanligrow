@@ -99,3 +99,16 @@ export function removeVietnameseTones(str) {
   str = str.replace(/\u02C6|\u0306|\u031B/g, "");
   return str.toLowerCase();
 }
+
+export function matchSearchTokens(targetStr, searchStr) {
+  if (!searchStr) return true;
+  if (!targetStr) return false;
+
+  const cleanSearch = removeVietnameseTones(searchStr).trim();
+  if (!cleanSearch) return true;
+
+  const cleanTarget = removeVietnameseTones(targetStr);
+  const tokens = cleanSearch.split(/\s+/).filter(Boolean);
+
+  return tokens.every(token => cleanTarget.includes(token));
+}
